@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI视频导演台 - 可试玩网页原型</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#070a10',
+            panel: '#0d131b',
+            panelSoft: '#131b25',
+            line: '#273142',
+            lineSoft: '#1b2230',
+            mist: '#8894a9',
+            smoke: '#d6dce7',
+            gold: '#b8945f',
+            goldSoft: '#8e6b3f',
+            steel: '#1a2534',
+            slateBlue: '#213047',
+            accent: '#d3b17a'
+          },
+          boxShadow: {
+            panel: '0 28px 80px rgba(0,0,0,.42)',
+            glow: '0 0 0 1px rgba(184,148,95,.18), 0 18px 50px rgba(0,0,0,.38)',
+            soft: '0 14px 34px rgba(0,0,0,.28)'
+          },
+          backgroundImage: {
+            grid: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+            glow: 'radial-gradient(circle at top, rgba(184,148,95,.18), transparent 42%)',
+            sweep: 'linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent)',
+            edge: 'linear-gradient(90deg, rgba(184,148,95,0), rgba(184,148,95,.8), rgba(184,148,95,0))'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --shell-width: min(1880px, calc(100vw - clamp(24px, 4vw, 72px)));
+      --shell-pad: clamp(18px, 2vw, 32px);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background:
+        radial-gradient(circle at 16% 10%, rgba(184,148,95,.13), transparent 24%),
+        radial-gradient(circle at 88% 16%, rgba(68,90,124,.16), transparent 24%),
+        linear-gradient(180deg, #06080d 0%, #080c12 38%, #06090f 100%);
+    }
+    .shell {
+      width: var(--shell-width);
+      margin-inline: auto;
+      padding-inline: var(--shell-pad);
+    }
+    .panel-frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(184,148,95,.14);
+      pointer-events: none;
+    }
+    .noise {
+      background-image:
+        linear-gradient(rgba(255,255,255,.02), rgba(255,255,255,.02)),
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.025), transparent 16%),
+        radial-gradient(circle at 82% 30%, rgba(255,255,255,.02), transparent 15%);
+    }
+    .metric-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-shimmer::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-130%);
+      background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.1) 50%, transparent 80%);
+      animation: sweep 4.6s linear infinite;
+    }
+    .pulse-dot {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .float-card {
+      transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease, background-color .28s ease;
+    }
+    .float-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(184,148,95,.28);
+      box-shadow: 0 18px 48px rgba(0,0,0,.28);
+    }
+    .interactive {
+      transition: transform .24s ease, border-color .24s ease, background-color .24s ease, color .24s ease, box-shadow .24s ease;
+    }
+    .interactive:hover {
+      transform: translateY(-1px);
+    }
+    .active-chip {
+      background: rgba(184,148,95,.12);
+      border-color: rgba(184,148,95,.35);
+      color: #f2d4a0;
+      box-shadow: 0 0 0 1px rgba(184,148,95,.08) inset;
+    }
+    .active-tab {
+      background: linear-gradient(180deg, rgba(184,148,95,.18), rgba(184,148,95,.08));
+      border-color: rgba(184,148,95,.34);
+      color: white;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    .timeline-track {
+      scrollbar-width: none;
+    }
+    .timeline-track::-webkit-scrollbar {
+      display: none;
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+      backdrop-filter: blur(14px);
+    }
+    .drawer-enter,
+    .modal-enter {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    @keyframes sweep {
+      to { transform: translateX(130%); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: .45; transform: scale(.92); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    @media (max-width: 640px) {
+      :root {
+        --shell-width: calc(100vw - 18px);
+        --shell-pad: 10px;
+      }
+    }
+  </style>
+</head>
+<body class="text-smoke antialiased selection:bg-gold/30 selection:text-white">
+  <div class="fixed inset-0 pointer-events-none opacity-30 bg-grid bg-[size:32px_32px]"></div>
+  <div class="fixed inset-x-0 top-0 h-72 pointer-events-none bg-glow"></div>
+  <div class="fixed inset-y-0 left-0 w-px pointer-events-none bg-gradient-to-b from-transparent via-gold/15 to-transparent hidden xl:block"></div>
+  <div class="fixed inset-y-0 right-0 w-px pointer-events-none bg-gradient-to-b from-transparent via-gold/15 to-transparent hidden xl:block"></div>
+
+  <header class="sticky top-0 z-40 border-b border-white/6 bg-ink/78 backdrop-blur-xl">
+    <div class="shell flex items-center justify-between gap-4 py-4">
+      <div class="flex min-w-0 items-center gap-4">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gold/35 bg-panel shadow-glow">
+          <i class="fa fa-play-circle text-lg text-gold"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-[10px] uppercase tracking-[0.38em] text-mist">Cinematic pre-production system</p>
+          <h1 class="truncate text-base font-semibold tracking-[0.18em] text-white">AI视频导演台</h1>
+        </div>
+      </div>
+
+      <nav class="hidden items-center gap-8 text-sm text-mist xl:flex">
+        <a href="#workspace" class="interactive hover:text-white">导演工作台</a>
+        <a href="#assets-board" class="interactive hover:text-white">资产设定</a>
+        <a href="#deliverables" class="interactive hover:text-white">导出中心</a>
+        <a href="#investor" class="interactive hover:text-white">投资视角</a>
+      </nav>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="projectSwitcherButton" class="interactive hidden rounded-full border border-white/10 px-4 py-2 text-sm text-mist hover:border-gold/30 hover:text-white md:inline-flex">切换案例</button>
+        <button id="openProjectButton" class="interactive rounded-full border border-white/10 px-4 py-2 text-sm text-mist hover:border-gold/30 hover:text-white">新建项目</button>
+        <button id="exportProjectButtonTop" class="interactive rounded-full bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-[#d7b27c]">导出项目</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="shell pt-8 md:pt-12">
+      <div class="grid gap-6 xl:grid-cols-[minmax(360px,520px)_minmax(0,1fr)] 2xl:grid-cols-[560px_minmax(0,1fr)]">
+        <div class="relative rounded-[30px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame noise md:p-8">
+          <div class="inline-flex items-center gap-3 rounded-full border border-gold/18 bg-white/[0.02] px-4 py-2 text-[11px] uppercase tracking-[0.34em] text-mist">
+            <span class="pulse-dot h-2 w-2 rounded-full bg-gold"></span>
+            for serious video creators
+          </div>
+
+          <h2 class="mt-6 max-w-[12ch] text-4xl font-semibold leading-[1.02] text-white sm:text-5xl xl:text-[4.2rem]">
+            让一个想法，
+            <span class="text-gold">像成片一样被推演完整。</span>
+          </h2>
+
+          <p class="mt-5 max-w-xl text-base leading-8 text-smoke/78 xl:text-lg">
+            它不是再给你一个提示词输入框，而是把选题、角色、场景、关键段落、故事板增强和最终交付，统一放进一个真正像导演在用的创作台里。
+          </p>
+
+          <div class="mt-7 flex flex-wrap gap-3">
+            <button id="openWorkspaceButton" class="interactive rounded-full bg-gold px-6 py-3 font-semibold text-ink hover:bg-[#d7b27c]">进入导演工作台</button>
+            <button id="openStoryboardButton" class="interactive rounded-full border border-white/10 px-6 py-3 text-sm text-smoke hover:border-gold/30 hover:text-white">查看故事板增强</button>
+          </div>
+
+          <div class="mt-8 grid gap-3 sm:grid-cols-3">
+            <div class="float-card relative rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">创作入口</p>
+              <p class="mt-2 text-lg font-semibold text-white">一句灵感 / 完整剧本</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">选题、剧本、参考图都能成为同一个项目的起点。</p>
+            </div>
+            <div class="float-card relative rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">差异化能力</p>
+              <p class="mt-2 text-lg font-semibold text-white">关键段落故事板增强</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">只对复杂段落加导演，不把全流程做重。</p>
+            </div>
+            <div class="float-card relative rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">最终结果</p>
+              <p class="mt-2 text-lg font-semibold text-white">可生成 / 可剪辑 / 可交付</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">资产、提示词、故事板、音乐与清单一次拿齐。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/84 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/10 via-transparent to-slateBlue/25"></div>
+          <div class="relative p-4 md:p-5 xl:p-6">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.34em] text-mist">Playable prototype</p>
+                <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">可点击导演工作台预览</h3>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-xs text-mist">
+                <button data-project="rain" class="project-chip interactive active-chip rounded-full border border-white/10 px-3 py-1.5">古风反转短片</button>
+                <button data-project="pulse" class="project-chip interactive rounded-full border border-white/10 px-3 py-1.5 hover:border-gold/25 hover:text-white">城市情绪广告</button>
+                <span id="heroAspectBadge" class="rounded-full border border-gold/25 px-3 py-1.5 text-gold">抖音 9:16</span>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-4 2xl:grid-cols-[minmax(0,1.24fr)_360px]">
+              <div class="overflow-hidden rounded-[28px] border border-white/8 bg-ink/44">
+                <div class="flex flex-col gap-4 border-b border-white/8 p-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p class="text-[11px] uppercase tracking-[0.28em] text-mist">项目总览</p>
+                    <h4 id="heroProjectTitle" class="mt-2 text-xl font-semibold text-white md:text-2xl">古风反转短视频 · 雨夜真相</h4>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                    <span id="heroAudienceBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/70">女性受众 25-34</span>
+                    <span id="heroStyleBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/70">情绪反转</span>
+                    <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/70">电影预制作界面</span>
+                  </div>
+                </div>
+
+                <div class="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.82fr)]">
+                  <div class="space-y-4">
+                    <div class="overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/60">
+                      <img id="heroMainImage" src="./assets/hero-kv-new.png" alt="导演工作台主视觉" class="h-[260px] w-full object-cover md:h-[320px] 2xl:h-[360px]">
+                    </div>
+                    <div class="grid gap-3 sm:grid-cols-4">
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">视频段落</p>
+                        <p id="metricSegments" class="mt-2 text-2xl font-semibold text-white">04</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">角色资产</p>
+                        <p id="metricCharacters" class="mt-2 text-2xl font-semibold text-white">06</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">场景资产</p>
+                        <p id="metricScenes" class="mt-2 text-2xl font-semibold text-white">09</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">导出状态</p>
+                        <p id="metricStatus" class="mt-2 text-2xl font-semibold text-white">Ready</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-4">
+                      <div class="flex items-center justify-between gap-4">
+                        <div>
+                          <p class="text-[11px] uppercase tracking-[0.3em] text-gold">制片提示</p>
+                          <p id="heroPromptTitle" class="mt-2 text-lg font-semibold text-white">第三段适合故事板增强</p>
+                        </div>
+                        <span class="pulse-dot h-3 w-3 rounded-full bg-gold"></span>
+                      </div>
+                      <p id="heroPromptText" class="mt-3 text-sm leading-7 text-smoke/72">推门、停顿、抬眼、真相冲击这类细节动作，需要更精细的镜头控制。</p>
+                    </div>
+
+                    <div class="rounded-[24px] border border-white/8 bg-panelSoft/66 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <div>
+                          <p class="text-[11px] uppercase tracking-[0.3em] text-mist">当前输出</p>
+                          <p class="mt-2 text-lg font-semibold text-white">本次交付清单</p>
+                        </div>
+                        <button id="openDeliverablesButton" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke hover:border-gold/25 hover:text-white">展开查看</button>
+                      </div>
+                      <div id="heroDeliverables" class="mt-4 space-y-2 text-sm text-smoke/72"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-1">
+                <div class="rounded-[26px] border border-white/8 bg-ink/46 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.3em] text-mist">状态</p>
+                      <p class="mt-2 text-lg font-semibold text-white">创作流程</p>
+                    </div>
+                    <span class="rounded-full border border-gold/25 px-3 py-1 text-xs text-gold">进行中</span>
+                  </div>
+                  <div id="heroStageList" class="mt-4 space-y-2.5"></div>
+                </div>
+
+                <div class="rounded-[26px] border border-white/8 bg-ink/46 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.3em] text-mist">可试玩入口</p>
+                      <p class="mt-2 text-lg font-semibold text-white">你可以直接乱点</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">假功能已接满</span>
+                  </div>
+                  <div class="mt-4 grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
+                    <button id="quickOpenDrawer" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/25 hover:text-white">查看角色详情抽屉</button>
+                    <button id="quickToggleMode" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/25 hover:text-white">切换故事板模式</button>
+                    <button id="quickSwitchSegment" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/25 hover:text-white">切到下一段剧情</button>
+                    <button id="quickOpenExport" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/25 hover:text-white">打开导出弹窗</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="workspace" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Core workspace</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">这不是静态海报，而是一块真的可以被试玩的导演工作台。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">横向信息优先，段落切换、模式开关、抽屉、弹层、导出状态、案例切换都在一个页面内完成。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 2xl:grid-cols-[minmax(0,1.42fr)_390px]">
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/86 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/22"></div>
+          <div class="relative p-4 md:p-5 xl:p-6">
+            <div class="flex flex-col gap-4 border-b border-white/8 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">导演工作台</p>
+                <h4 id="workspaceProjectTitle" class="mt-2 text-2xl font-semibold text-white">古风反转短视频 · 雨夜真相</h4>
+                <p id="workspaceProjectBrief" class="mt-2 max-w-3xl text-sm leading-7 text-smoke/68">前三秒先给悬念，中段用情绪递进压住停留，结尾用眼神反转做评论区发酵点。</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="modeToggle" class="interactive active-chip rounded-full border border-white/10 px-4 py-2 text-sm">故事板增强：开</button>
+                <button id="aspectToggle" class="interactive rounded-full border border-white/10 px-4 py-2 text-sm text-smoke hover:border-gold/30 hover:text-white">画幅：9:16</button>
+                <button id="startReviewButton" class="interactive rounded-full border border-white/10 px-4 py-2 text-sm text-smoke hover:border-gold/30 hover:text-white">查看评审摘要</button>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
+              <div class="space-y-4">
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.28em] text-mist">段落时间线</p>
+                      <p class="mt-2 text-lg font-semibold text-white">点击任一段落，右侧内容会联动变化</p>
+                    </div>
+                    <div class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-mist">支持普通模式 / 故事板增强双态切换</div>
+                  </div>
+                  <div id="segmentTimeline" class="timeline-track mt-4 flex gap-3 overflow-x-auto pb-2"></div>
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1.24fr)_320px]">
+                  <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                    <div class="flex flex-col gap-3 border-b border-white/8 pb-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">当前段落画布</p>
+                        <h5 id="segmentTitle" class="mt-2 text-xl font-semibold text-white">P03 · 推门见真相</h5>
+                      </div>
+                      <div class="flex flex-wrap gap-2 text-xs">
+                        <span id="segmentDurationBadge" class="rounded-full border border-gold/25 px-3 py-1.5 text-gold">8.5s</span>
+                        <span id="segmentStatusBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/70">重点段落</span>
+                      </div>
+                    </div>
+                    <div class="mt-4 overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/70">
+                      <img id="segmentImage" src="./assets/storyboard-triptych-new.png" alt="段落预览" class="h-[270px] w-full object-cover md:h-[360px] xl:h-[420px]">
+                    </div>
+                    <div class="mt-4 grid gap-3 xl:grid-cols-3">
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">叙事目标</p>
+                        <p id="segmentGoal" class="mt-3 text-sm leading-7 text-smoke/74">通过推门、停顿、抬眼和真相冲击完成情绪顶点。</p>
+                      </div>
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">角色 / 场景</p>
+                        <p id="segmentAssetsSummary" class="mt-3 text-sm leading-7 text-smoke/74">女主 A、男主 B、旧宅门厅、雨夜反光地面、半开的信封。</p>
+                      </div>
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">操作建议</p>
+                        <p id="segmentAdvice" class="mt-3 text-sm leading-7 text-smoke/74">建议保留故事板增强，减少走位和眼神细节抽卡次数。</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <div>
+                          <p class="text-[11px] uppercase tracking-[0.28em] text-mist">资产速览</p>
+                          <p class="mt-2 text-lg font-semibold text-white">点击查看详情</p>
+                        </div>
+                        <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">抽屉联动</span>
+                      </div>
+                      <div id="assetCards" class="mt-4 grid gap-3"></div>
+                    </div>
+
+                    <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <div>
+                          <p class="text-[11px] uppercase tracking-[0.28em] text-mist">输出动作</p>
+                          <p class="mt-2 text-lg font-semibold text-white">假功能全开</p>
+                        </div>
+                        <span class="rounded-full border border-gold/25 px-3 py-1 text-xs text-gold">可点</span>
+                      </div>
+                      <div class="mt-4 space-y-2.5">
+                        <button data-export="storyboard" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-gold/24 bg-gold/10 px-4 py-3 text-left text-sm text-white hover:bg-gold/14">
+                          <span>导出故事板图包</span><i class="fa fa-arrow-right text-gold"></i>
+                        </button>
+                        <button data-export="prompt" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出视频提示词</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                        <button data-export="assets" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出角色 / 场景资产</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                        <button data-export="bundle" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出完整交付包</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="space-y-4">
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.28em] text-mist">工作台说明</p>
+                      <p class="mt-2 text-lg font-semibold text-white">当前逻辑摘要</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">像真能用</span>
+                  </div>
+                  <div id="workspaceSummary" class="mt-4 space-y-3 text-sm text-smoke/72"></div>
+                </div>
+
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.28em] text-mist">活动流</p>
+                      <p class="mt-2 text-lg font-semibold text-white">最近变更</p>
+                    </div>
+                    <button id="shuffleActivityButton" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke hover:border-gold/25 hover:text-white">刷新状态</button>
+                  </div>
+                  <div id="activityList" class="mt-4 space-y-3"></div>
+                </div>
+
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.28em] text-mist">投资视角</p>
+                      <p class="mt-2 text-lg font-semibold text-white">这个原型想证明什么</p>
+                    </div>
+                    <span class="rounded-full border border-gold/25 px-3 py-1 text-xs text-gold">演示话术</span>
+                  </div>
+                  <ul class="mt-4 space-y-3 text-sm leading-7 text-smoke/72">
+                    <li>· 用户不是面对一堆 prompt，而是在操作一条能被理解的创作流程。</li>
+                    <li>· 关键段落增强是明确可感知的付费差异点，不是抽象 AI 能力。</li>
+                    <li>· 交付物是完整项目包，天然更适合团队协作和商业化包装。</li>
+                  </ul>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="float-card relative rounded-[30px] border border-white/6 bg-panel/78 p-5 shadow-soft panel-frame">
+            <p class="text-[11px] uppercase tracking-[0.32em] text-mist">响应式表现</p>
+            <h4 class="mt-3 text-2xl font-semibold text-white">21:9 铺开，16:9 稳定，手机也能顺着看。</h4>
+            <ul class="mt-4 space-y-3 text-sm leading-7 text-smoke/70">
+              <li>· 超宽屏上，主画布和侧栏横向展开，不再被窄栏挤成竖条。</li>
+              <li>· 标准桌面下，信息块回流成双栏，不会出现长窄框堆叠。</li>
+              <li>· 手机上按纵向讲故事，但交互依旧可点、可切、可展开。</li>
+            </ul>
+          </div>
+
+          <div class="float-card relative overflow-hidden rounded-[30px] border border-white/6 bg-panel/78 p-5 shadow-soft panel-frame">
+            <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/16"></div>
+            <div class="relative">
+              <p class="text-[11px] uppercase tracking-[0.32em] text-mist">可点击模块</p>
+              <h4 class="mt-3 text-2xl font-semibold text-white">看起来像产品，不像 PPT。</h4>
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">案例切换</div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">段落联动</div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">故事板开关</div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">资产抽屉</div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">导出弹窗</div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">活动流刷新</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="assets-board" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Asset boards</p>
+          <h3 class="mt-3 text-3xl font-semibold text-white md:text-4xl">把角色和场景先做成资产，整条视频才会有世界观。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">这一区不只是展示大图，也能打开详情抽屉，模拟用户深入查看角色、服化道、场景和气氛参考。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 xl:grid-cols-2">
+        <article class="relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/82 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-transparent"></div>
+          <div class="relative p-5 md:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Character board</p>
+                <h4 class="mt-2 text-2xl font-semibold text-white">角色设定板 / 服化道板</h4>
+              </div>
+              <button data-drawer-type="character" class="open-drawer interactive rounded-full border border-gold/25 px-4 py-2 text-sm text-gold hover:bg-gold/10">查看角色细节</button>
+            </div>
+            <div class="mt-5 overflow-hidden rounded-[24px] border border-white/8">
+              <img src="./assets/character-board-new.png" alt="角色设定板" class="h-[280px] w-full object-cover md:h-[420px] xl:h-[460px]">
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">角色一致性锁定</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">服装与材质统一</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">多段落复用更稳</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/82 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-slateBlue/18 via-transparent to-transparent"></div>
+          <div class="relative p-5 md:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Scene board</p>
+                <h4 class="mt-2 text-2xl font-semibold text-white">场景气氛板 / 光影材质板</h4>
+              </div>
+              <button data-drawer-type="scene" class="open-drawer interactive rounded-full border border-gold/25 px-4 py-2 text-sm text-gold hover:bg-gold/10">查看场景细节</button>
+            </div>
+            <div class="mt-5 overflow-hidden rounded-[24px] border border-white/8">
+              <img src="./assets/scene-board-new.png" alt="场景气氛板" class="h-[280px] w-full object-cover md:h-[420px] xl:h-[460px]">
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">空间氛围锁定</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">光影色调统一</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm text-smoke/72">镜头情绪更可信</div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="deliverables" class="shell py-12 md:py-16">
+      <div class="relative overflow-hidden rounded-[36px] border border-white/6 bg-panel/84 shadow-panel panel-frame">
+        <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/22"></div>
+        <div class="relative p-6 md:p-8 xl:p-10">
+          <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Deliverables</p>
+              <h3 class="mt-3 max-w-5xl text-3xl font-semibold text-white md:text-4xl">最后交付的不是零碎文件，而是一套创作者拿去就能开干的成片方案。</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="exportProjectButtonBottom" class="interactive rounded-full bg-gold px-5 py-3 font-semibold text-ink hover:bg-[#d7b27c]">导出完整项目</button>
+              <button id="openChecklistButton" class="interactive rounded-full border border-white/10 px-5 py-3 text-sm text-smoke hover:border-gold/25 hover:text-white">查看交付清单</button>
+            </div>
+          </div>
+
+          <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">01</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">视频提示词</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">按段落组织，适配视频工具逐段生成。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">02</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">故事板增强图</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">专门服务复杂段落，减少动作抽卡成本。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">03</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">角色资产</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">保证人物外观、服化道和气质跨段稳定。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">04</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">场景资产</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">空间、光影、材质、氛围统一到同一作品气质。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">05</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">音乐建议</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">主题方向、气氛使用点、后期混音提示一并交付。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">06</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">剪辑清单</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">每段时长、顺序和衔接建议清楚可见。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="investor" class="shell pb-20 pt-4 md:pb-24">
+      <div class="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_420px]">
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/82 shadow-panel panel-frame p-6 md:p-8">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-transparent"></div>
+          <div class="relative">
+            <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Positioning statement</p>
+            <h3 class="mt-3 max-w-5xl text-3xl font-semibold text-white md:text-4xl">给想把视频做出作品感的人，一个真正站在导演视角上的 AI 创作界面。</h3>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">不是堆 AI 功能，而是把复杂流程翻译成用户能理解的创作界面。</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">故事板增强是可感知的高阶能力，适合作为付费升级点。</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">输出的是完整项目包，天然适合团队协作与商业交付。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/82 shadow-panel panel-frame p-6 md:p-8">
+          <div class="absolute inset-0 bg-gradient-to-br from-slateBlue/18 via-transparent to-transparent"></div>
+          <div class="relative">
+            <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Demo script</p>
+            <h3 class="mt-3 text-3xl font-semibold text-white">演示时建议这样讲</h3>
+            <ol class="mt-5 space-y-4 text-sm leading-7 text-smoke/72">
+              <li><span class="text-gold">01.</span> 先切案例，证明它不是单个页面截图，而是有项目切换能力。</li>
+              <li><span class="text-gold">02.</span> 再切段落和故事板开关，让别人立刻看到“增强”到底增强了什么。</li>
+              <li><span class="text-gold">03.</span> 点开角色抽屉和导出弹窗，让人感觉产品骨架已经成型。</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="drawerBackdrop" class="pointer-events-none fixed inset-0 z-50 bg-black/55 opacity-0 transition duration-300"></div>
+  <aside id="assetDrawer" class="pointer-events-none fixed right-0 top-0 z-50 h-full w-full max-w-[460px] translate-x-full border-l border-white/10 bg-ink/96 shadow-panel transition duration-300 md:max-w-[500px]">
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between gap-4 border-b border-white/8 px-5 py-5 md:px-6">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Asset detail</p>
+          <h3 id="drawerTitle" class="mt-2 text-2xl font-semibold text-white">角色细节</h3>
+          <p id="drawerSubtitle" class="mt-2 text-sm leading-6 text-smoke/68">抽屉内容会随点击对象变化。</p>
+        </div>
+        <button id="closeDrawerButton" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-smoke hover:border-gold/25 hover:text-white">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 py-5 md:px-6">
+        <div class="overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/70">
+          <img id="drawerImage" src="./assets/character-board-new.png" alt="抽屉预览图" class="h-[220px] w-full object-cover">
+        </div>
+        <div id="drawerMeta" class="mt-5 grid gap-3 sm:grid-cols-2"></div>
+        <div class="mt-5 rounded-[24px] border border-white/8 bg-panelSoft/60 p-5">
+          <p class="text-[11px] uppercase tracking-[0.28em] text-mist">说明</p>
+          <p id="drawerDescription" class="mt-3 text-sm leading-7 text-smoke/74"></p>
+        </div>
+        <div class="mt-5 rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+          <p class="text-[11px] uppercase tracking-[0.28em] text-gold">细节标签</p>
+          <div id="drawerTags" class="mt-3 flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="modalRoot" class="pointer-events-none fixed inset-0 z-[60] opacity-0 transition duration-300">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/60"></div>
+    <div class="absolute inset-0 flex items-end justify-center p-3 md:items-center md:p-6">
+      <div id="modalPanel" class="modal-enter relative w-full max-w-[760px] rounded-[30px] border border-white/10 bg-ink/96 shadow-panel transition duration-300">
+        <div class="flex items-start justify-between gap-4 border-b border-white/8 px-5 py-5 md:px-6">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Action center</p>
+            <h3 id="modalTitle" class="mt-2 text-2xl font-semibold text-white">导出项目</h3>
+            <p id="modalSubtitle" class="mt-2 text-sm leading-6 text-smoke/68">这里会根据操作切换不同内容。</p>
+          </div>
+          <button id="closeModalButton" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-smoke hover:border-gold/25 hover:text-white">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="px-5 py-5 md:px-6">
+          <div id="modalContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      currentProject: 'rain',
+      currentSegmentIndex: 2,
+      storyboardEnhanced: true,
+      currentAspectIndex: 0,
+      activityOffset: 0
+    };
+
+    const projectData = {
+      rain: {
+        key: 'rain',
+        title: '古风反转短视频 · 雨夜真相',
+        audience: '女性受众 25-34',
+        style: '情绪反转',
+        aspectOptions: ['9:16', '16:9', '1:1'],
+        aspectLabel: '抖音 9:16',
+        brief: '前三秒先给悬念，中段用情绪递进压住停留，结尾用眼神反转做评论区发酵点。',
+        heroImage: './assets/hero-kv-new.png',
+        deliverables: ['角色资产 6 份', '场景资产 9 份', '故事板增强 1 段', '视频提示词 4 段', '音乐建议 2 条', '剪辑清单 1 份'],
+        metrics: { segments: '04', characters: '06', scenes: '09', status: 'Ready' },
+        promptTitle: '第三段适合故事板增强',
+        promptText: '推门、停顿、抬眼、真相冲击这类细节动作，需要更精细的镜头控制。',
+        stages: [
+          { name: '导入项目', status: 'done' },
+          { name: '平台与受众', status: 'done' },
+          { name: '角色设定板', status: 'done' },
+          { name: '场景气氛板', status: 'done' },
+          { name: '导演工作台', status: 'active' },
+          { name: '导出交付', status: 'next' }
+        ],
+        summary: [
+          '当前项目目标是做成能引发评论区讨论的短剧式反转视频。',
+          '系统建议只把第三段升级为故事板增强，避免全片过度复杂。',
+          '导出后可直接进入 Seedance / 可灵 / Runway 和后期剪辑。'
+        ],
+        activity: [
+          'P03 已切换为故事板增强，镜头节奏锁定完成。',
+          '角色服化道已同步到全部段落，人物一致性状态稳定。',
+          '雨夜门厅场景色调已锁定为冷蓝灰 + 暗金反光。',
+          '最终交付包等待用户确认导出内容。'
+        ],
+        assets: [
+          {
+            type: 'character',
+            title: '女主 A · 冷感脆弱型',
+            subtitle: '深蓝刺绣斗篷 / 眼神收着情绪',
+            description: '主角需要同时呈现脆弱与警惕，所以服装、轮廓和表情设计都偏克制，避免用太强的戏剧化发散人物气质。',
+            tags: ['主角锁定', '冷雨夜质感', '深蓝刺绣', '克制情绪'],
+            image: './assets/character-board-new.png',
+            meta: ['年龄感 24-28', '音色偏低柔', '材质：湿感丝绒', '配饰：古金币纹理']
+          },
+          {
+            type: 'scene',
+            title: '旧宅门厅 · 真相空间',
+            subtitle: '反光地面 / 昏暗长廊 / 烛光侧打',
+            description: '这是全片最重要的空间锚点，承担悬念落地与真相揭示两种情绪，所以地面反光和门厅深处层次必须清晰可感。',
+            tags: ['门厅空间', '地面反光', '冷暖对冲', '情绪顶点'],
+            image: './assets/scene-board-new.png',
+            meta: ['主空间 S03', '材质：旧木与石面', '光源：侧烛光', '雨夜冷反光']
+          },
+          {
+            type: 'storyboard',
+            title: 'P03 故事板增强',
+            subtitle: '推门 / 停顿 / 抬眼 / 真相冲击',
+            description: '该段落需要精细控制走位与情绪推进，所以用故事板先把镜头顺序预演好，再把视频提示词压到更准确。',
+            tags: ['关键段落', '精细动作', '镜头预演', '减少抽卡'],
+            image: './assets/storyboard-triptych-new.png',
+            meta: ['4 个镜头步骤', '总时长 8.5s', '重点情绪段', '可导出独立文档']
+          }
+        ],
+        segments: [
+          {
+            id: 'P01',
+            title: 'P01 · 雨夜背影',
+            duration: '3.5s',
+            status: '开头钩子',
+            goal: '用背影和雨声建立悬念，让观众先停下来。',
+            assetsSummary: '女主 A、雨夜街角、油纸伞、冷色路灯反光。',
+            advice: '普通模式即可，重点保持画面统一和前三秒抓力。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P02',
+            title: 'P02 · 递伞靠近',
+            duration: '5.0s',
+            status: '情绪递进',
+            goal: '用靠近和细小动作，悄悄把关系往前推。',
+            assetsSummary: '女主 A、男主 B、雨夜街角、油纸伞。',
+            advice: '普通模式更轻，保留人物动作自然度。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P03',
+            title: 'P03 · 推门见真相',
+            duration: '8.5s',
+            status: '重点段落',
+            goal: '通过推门、停顿、抬眼和真相冲击完成情绪顶点。',
+            assetsSummary: '女主 A、男主 B、旧宅门厅、雨夜反光地面、半开的信封。',
+            advice: '建议保留故事板增强，减少走位和眼神细节抽卡次数。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P04',
+            title: 'P04 · 眼神定格',
+            duration: '4.0s',
+            status: '反转收束',
+            goal: '用短促定格把悬念甩给评论区，让结尾有回味。',
+            assetsSummary: '女主 A 特写、冷色眼神光、门厅暗背景。',
+            advice: '保持镜头简短有力，不要过多动作分散情绪。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          }
+        ]
+      },
+      pulse: {
+        key: 'pulse',
+        title: '城市情绪广告 · 夜色回声',
+        audience: '品牌客户 / 年轻白领',
+        style: '高级情绪广告',
+        aspectOptions: ['16:9', '9:16', '21:9'],
+        aspectLabel: '品牌片 16:9',
+        brief: '重点不是剧情反转，而是把都市孤独感做成可被品牌接受的情绪美学，镜头更稳，节奏更呼吸。',
+        heroImage: './assets/hero-kv-new.png',
+        deliverables: ['角色资产 3 份', '场景资产 7 份', '故事板增强 2 段', '视频提示词 5 段', '音乐方向 3 条', '提案摘要 1 份'],
+        metrics: { segments: '05', characters: '03', scenes: '07', status: 'Packed' },
+        promptTitle: '中段节奏建议更慢更沉',
+        promptText: '广告片不靠反转，而靠情绪氛围沉浸，所以镜头推进节奏要更呼吸，停顿空间要更大。',
+        stages: [
+          { name: '品牌信息', status: 'done' },
+          { name: '受众情绪画像', status: 'done' },
+          { name: '角色设定板', status: 'done' },
+          { name: '场景气氛板', status: 'done' },
+          { name: '导演工作台', status: 'active' },
+          { name: '提案导出', status: 'next' }
+        ],
+        summary: [
+          '当前项目面向品牌提案，重点是情绪统一与高级感，而不是剧情爆点。',
+          '故事板增强被用在两段镜头组上，方便控制过渡和镜头呼吸。',
+          '导出结果更适合作为提案包和样片制作说明。'
+        ],
+        activity: [
+          '主色板已切到 gunmetal + muted blue，金色只保留点睛。',
+          'P02 与 P04 启用故事板增强，用于控制镜头过渡。',
+          '品牌露出位置已避开主情绪镜头，减少广告感突兀。',
+          '导出包已包含提案摘要与镜头说明。'
+        ],
+        assets: [
+          {
+            type: 'character',
+            title: '都市女主 · 低饱和高级感',
+            subtitle: '驼色风衣 / 冷蓝夜景 / 轻疲惫感',
+            description: '人物需要更像现代高级广告里的真实城市人，而不是戏剧化角色，所以造型和情绪都偏写意克制。',
+            tags: ['品牌气质', '低饱和', '都市夜景', '轻疲惫感'],
+            image: './assets/character-board-new.png',
+            meta: ['年龄感 28-32', '造型：风衣 + 金属耳饰', '材质：羊毛与皮革', '气质：克制高级']
+          },
+          {
+            type: 'scene',
+            title: '高层玻璃走廊 · 城市夜景',
+            subtitle: '反射玻璃 / 车流散景 / 冷暖分区',
+            description: '空间承担品牌高级感和城市孤独感双重表达，所以需要把材质、反射和外部夜景层次处理得很干净。',
+            tags: ['城市夜景', '玻璃反射', '品牌片氛围', '冷暖分区'],
+            image: './assets/scene-board-new.png',
+            meta: ['主空间 S02', '材质：玻璃与金属', '光源：顶灯 + 车流', '品牌片镜面感']
+          },
+          {
+            type: 'storyboard',
+            title: 'P04 情绪回望',
+            subtitle: '驻足 / 回望 / 城市散景叠压',
+            description: '该段镜头要把人物与城市关系在很短时间里表达出来，所以用故事板增强去控停顿和转身节奏。',
+            tags: ['情绪镜头', '回望停顿', '品牌提案', '节奏可控'],
+            image: './assets/storyboard-triptych-new.png',
+            meta: ['3 个镜头步骤', '总时长 7.0s', '品牌提案段', '适合大屏播放']
+          }
+        ],
+        segments: [
+          {
+            id: 'P01',
+            title: 'P01 · 夜色建立',
+            duration: '4.0s',
+            status: '空间建立',
+            goal: '先让观众沉入都市夜色，再接受情绪进入。',
+            assetsSummary: '城市天桥、车流散景、冷蓝霓虹反射。',
+            advice: '普通模式即可，重点保持空间呼吸感。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P02',
+            title: 'P02 · 电梯镜面',
+            duration: '6.0s',
+            status: '增强段落',
+            goal: '通过镜面反射和人物轻动作，建立情绪内心戏。',
+            assetsSummary: '都市女主、电梯镜面、金属材质、低饱和灯光。',
+            advice: '建议开故事板增强，避免镜面与人物关系失控。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P03',
+            title: 'P03 · 走廊慢行',
+            duration: '5.5s',
+            status: '呼吸段',
+            goal: '让人物和空间关系自然展开，不要急着给信息。',
+            assetsSummary: '玻璃走廊、城市灯流、风衣人物。',
+            advice: '普通模式更稳，镜头要慢。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P04',
+            title: 'P04 · 回望情绪点',
+            duration: '7.0s',
+            status: '增强段落',
+            goal: '把驻足、回望和城市散景叠压成一个情绪高潮。',
+            assetsSummary: '都市女主、玻璃幕墙、夜景散景。',
+            advice: '建议保留故事板增强，控制人物停顿和视线。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          },
+          {
+            id: 'P05',
+            title: 'P05 · 品牌落点',
+            duration: '3.0s',
+            status: '收尾镜头',
+            goal: '让情绪自然收口，给品牌一个高级而不生硬的落点。',
+            assetsSummary: '局部特写、低亮度品牌元素、冷金光线。',
+            advice: '收尾保持极简，不要做成广告口播感。',
+            imageNormal: './assets/hero-kv-new.png',
+            imageStoryboard: './assets/storyboard-triptych-new.png'
+          }
+        ]
+      }
+    };
+
+    const drawerPresets = {
+      character: () => projectData[state.currentProject].assets.find(asset => asset.type === 'character'),
+      scene: () => projectData[state.currentProject].assets.find(asset => asset.type === 'scene'),
+      storyboard: () => projectData[state.currentProject].assets.find(asset => asset.type === 'storyboard')
+    };
+
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const assetDrawer = document.getElementById('assetDrawer');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerSubtitle = document.getElementById('drawerSubtitle');
+    const drawerImage = document.getElementById('drawerImage');
+    const drawerMeta = document.getElementById('drawerMeta');
+    const drawerDescription = document.getElementById('drawerDescription');
+    const drawerTags = document.getElementById('drawerTags');
+
+    const modalRoot = document.getElementById('modalRoot');
+    const modalPanel = document.getElementById('modalPanel');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const modalContent = document.getElementById('modalContent');
+
+    function getCurrentProject() {
+      return projectData[state.currentProject];
+    }
+
+    function getCurrentAspect() {
+      const project = getCurrentProject();
+      return project.aspectOptions[state.currentAspectIndex % project.aspectOptions.length];
+    }
+
+    function getCurrentSegment() {
+      return getCurrentProject().segments[state.currentSegmentIndex];
+    }
+
+    function renderHero() {
+      const project = getCurrentProject();
+      document.getElementById('heroProjectTitle').textContent = project.title;
+      document.getElementById('heroAudienceBadge').textContent = project.audience;
+      document.getElementById('heroStyleBadge').textContent = project.style;
+      document.getElementById('heroMainImage').src = project.heroImage;
+      document.getElementById('heroMainImage').alt = project.title;
+      document.getElementById('metricSegments').textContent = project.metrics.segments;
+      document.getElementById('metricCharacters').textContent = project.metrics.characters;
+      document.getElementById('metricScenes').textContent = project.metrics.scenes;
+      document.getElementById('metricStatus').textContent = project.metrics.status;
+      document.getElementById('heroPromptTitle').textContent = project.promptTitle;
+      document.getElementById('heroPromptText').textContent = project.promptText;
+      document.getElementById('heroAspectBadge').textContent = project.aspectLabel;
+
+      const deliverables = document.getElementById('heroDeliverables');
+      deliverables.innerHTML = project.deliverables.map(item => `
+        <div class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+          <span>${item}</span>
+          <i class="fa fa-check text-gold"></i>
+        </div>
+      `).join('');
+
+      const stageList = document.getElementById('heroStageList');
+      stageList.innerHTML = project.stages.map(stage => {
+        const styles = stage.status === 'done'
+          ? 'border-white/8 bg-white/[0.03] text-smoke/76'
+          : stage.status === 'active'
+            ? 'border-gold/28 bg-gold/10 text-white'
+            : 'border-white/8 bg-panelSoft/40 text-mist';
+        const icon = stage.status === 'done'
+          ? '<i class="fa fa-check text-gold"></i>'
+          : stage.status === 'active'
+            ? '<i class="fa fa-circle text-[10px] text-gold"></i>'
+            : '<i class="fa fa-angle-right text-mist"></i>';
+        return `
+          <div class="flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${styles}">
+            <span>${stage.name}</span>
+            ${icon}
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.project-chip').forEach(chip => {
+        chip.classList.toggle('active-chip', chip.dataset.project === state.currentProject);
+      });
+    }
+
+    function renderWorkspace() {
+      const project = getCurrentProject();
+      const segment = getCurrentSegment();
+      document.getElementById('workspaceProjectTitle').textContent = project.title;
+      document.getElementById('workspaceProjectBrief').textContent = project.brief;
+      document.getElementById('modeToggle').textContent = `故事板增强：${state.storyboardEnhanced ? '开' : '关'}`;
+      document.getElementById('aspectToggle').textContent = `画幅：${getCurrentAspect()}`;
+
+      const timeline = document.getElementById('segmentTimeline');
+      timeline.innerHTML = project.segments.map((item, index) => {
+        const active = index === state.currentSegmentIndex;
+        const tone = active ? 'border-gold/28 bg-gold/10 shadow-glow' : 'border-white/8 bg-white/[0.03]';
+        return `
+          <button data-segment-index="${index}" class="segment-chip interactive min-w-[240px] shrink-0 rounded-[24px] border p-4 text-left ${tone}">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs uppercase tracking-[0.26em] ${active ? 'text-gold' : 'text-mist'}">${item.id}</span>
+              <span class="rounded-full border border-white/10 px-2.5 py-1 text-xs ${active ? 'text-gold' : 'text-smoke/60'}">${item.duration}</span>
+            </div>
+            <p class="mt-3 text-lg font-semibold text-white">${item.title.replace(`${item.id} · `, '')}</p>
+            <p class="mt-2 text-sm leading-6 text-smoke/68">${item.goal}</p>
+          </button>
+        `;
+      }).join('');
+
+      document.getElementById('segmentTitle').textContent = segment.title;
+      document.getElementById('segmentDurationBadge').textContent = segment.duration;
+      document.getElementById('segmentStatusBadge').textContent = segment.status;
+      document.getElementById('segmentGoal').textContent = segment.goal;
+      document.getElementById('segmentAssetsSummary').textContent = segment.assetsSummary;
+      document.getElementById('segmentAdvice').textContent = state.storyboardEnhanced ? segment.advice : '已切到普通模式，当前预览将优先展示更直接的单镜生成路径。';
+      document.getElementById('segmentImage').src = state.storyboardEnhanced ? segment.imageStoryboard : segment.imageNormal;
+
+      const assetCards = document.getElementById('assetCards');
+      assetCards.innerHTML = project.assets.map(asset => `
+        <button data-drawer-type="${asset.type}" class="open-drawer interactive flex items-start justify-between gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-left hover:border-gold/24 hover:bg-white/[0.04]">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.28em] text-mist">${asset.type}</p>
+            <p class="mt-2 text-base font-semibold text-white">${asset.title}</p>
+            <p class="mt-2 text-sm leading-6 text-smoke/68">${asset.subtitle}</p>
+          </div>
+          <i class="fa fa-angle-right mt-1 text-mist"></i>
+        </button>
+      `).join('');
+
+      const summary = document.getElementById('workspaceSummary');
+      summary.innerHTML = project.summary.map(item => `
+        <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 leading-7">${item}</div>
+      `).join('');
+
+      const activityList = document.getElementById('activityList');
+      const rotated = project.activity.slice(state.activityOffset).concat(project.activity.slice(0, state.activityOffset));
+      activityList.innerHTML = rotated.map(item => `
+        <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">
+          <div class="flex items-start gap-3">
+            <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-gold pulse-dot"></span>
+            <span>${item}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAll() {
+      const project = getCurrentProject();
+      state.currentSegmentIndex = Math.min(state.currentSegmentIndex, project.segments.length - 1);
+      renderHero();
+      renderWorkspace();
+    }
+
+    function openDrawer(type) {
+      const presetGetter = drawerPresets[type] || drawerPresets.storyboard;
+      const data = presetGetter();
+      if (!data) return;
+      drawerTitle.textContent = data.title;
+      drawerSubtitle.textContent = data.subtitle;
+      drawerImage.src = data.image;
+      drawerDescription.textContent = data.description;
+      drawerMeta.innerHTML = data.meta.map(item => `
+        <div class="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72">${item}</div>
+      `).join('');
+      drawerTags.innerHTML = data.tags.map(tag => `
+        <span class="rounded-full border border-gold/24 bg-gold/10 px-3 py-1.5 text-xs text-gold">${tag}</span>
+      `).join('');
+      drawerBackdrop.classList.remove('pointer-events-none', 'opacity-0');
+      assetDrawer.classList.remove('pointer-events-none', 'translate-x-full');
+    }
+
+    function closeDrawer() {
+      drawerBackdrop.classList.add('pointer-events-none', 'opacity-0');
+      assetDrawer.classList.add('pointer-events-none', 'translate-x-full');
+    }
+
+    function openModal(config) {
+      modalTitle.textContent = config.title;
+      modalSubtitle.textContent = config.subtitle;
+      modalContent.innerHTML = config.html;
+      modalRoot.classList.remove('pointer-events-none', 'opacity-0');
+      modalPanel.classList.remove('modal-enter');
+    }
+
+    function closeModal() {
+      modalRoot.classList.add('pointer-events-none', 'opacity-0');
+      modalPanel.classList.add('modal-enter');
+    }
+
+    function buildExportModal(type = 'bundle') {
+      const project = getCurrentProject();
+      const segment = getCurrentSegment();
+      const titleMap = {
+        storyboard: '导出故事板图包',
+        prompt: '导出视频提示词',
+        assets: '导出角色 / 场景资产',
+        bundle: '导出完整项目'
+      };
+      const subtitleMap = {
+        storyboard: `当前将优先打包 ${segment.title} 的故事板增强内容。`,
+        prompt: `当前将导出 ${project.title} 的段落化视频提示词。`,
+        assets: `当前将导出 ${project.title} 的角色与场景资产。`,
+        bundle: `当前将打包 ${project.title} 的全部演示交付物。`
+      };
+      const progress = type === 'bundle' ? 84 : type === 'assets' ? 67 : type === 'prompt' ? 76 : 92;
+      return {
+        title: titleMap[type],
+        subtitle: subtitleMap[type],
+        html: `
+          <div class="space-y-5">
+            <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.28em] text-gold">导出进度</p>
+                  <p class="mt-2 text-xl font-semibold text-white">项目资源已准备就绪</p>
+                </div>
+                <span class="rounded-full border border-gold/25 px-3 py-1.5 text-sm text-gold">${progress}%</span>
+              </div>
+              <div class="mt-4 h-3 overflow-hidden rounded-full bg-white/8">
+                <div class="h-full rounded-full bg-gradient-to-r from-goldSoft via-gold to-accent" style="width:${progress}%"></div>
+              </div>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2">
+              ${project.deliverables.map(item => `
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72">${item}</div>
+              `).join('')}
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <button class="interactive rounded-2xl border border-gold/24 bg-gold px-4 py-3 font-semibold text-ink hover:bg-[#d7b27c]">下载压缩包</button>
+              <button class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-smoke hover:border-gold/24 hover:text-white">复制分享链接</button>
+              <button class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-smoke hover:border-gold/24 hover:text-white">查看交付说明</button>
+            </div>
+          </div>
+        `
+      };
+    }
+
+    function buildNewProjectModal() {
+      return {
+        title: '新建项目向导',
+        subtitle: '这是一个假交互弹层，但已经模拟出完整的新建入口。',
+        html: `
+          <div class="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+            <div class="space-y-4">
+              <div>
+                <label class="text-[11px] uppercase tracking-[0.28em] text-mist">一句话想法</label>
+                <div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">雨夜里的一次推门，让一段关系瞬间翻转。</div>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="text-[11px] uppercase tracking-[0.28em] text-mist">目标平台</label>
+                  <div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">抖音 / 小红书 / B站</div>
+                </div>
+                <div>
+                  <label class="text-[11px] uppercase tracking-[0.28em] text-mist">画幅</label>
+                  <div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">9:16 / 16:9 / 1:1</div>
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] uppercase tracking-[0.28em] text-mist">风格基调</label>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span class="rounded-full border border-gold/25 bg-gold/10 px-3 py-1.5 text-xs text-gold">电影感写实</span>
+                  <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/68">高级广告感</span>
+                  <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/68">情绪悬疑</span>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-panelSoft/60 p-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-mist">接下来会发生什么</p>
+              <ul class="mt-4 space-y-3 text-sm leading-7 text-smoke/72">
+                <li>1. 先锁定平台、受众和审美方向。</li>
+                <li>2. 再拆角色、场景和段落结构。</li>
+                <li>3. 复杂段落可单独开启故事板增强。</li>
+                <li>4. 最后导出可直接生成的完整交付包。</li>
+              </ul>
+              <button class="interactive mt-5 w-full rounded-2xl bg-gold px-4 py-3 font-semibold text-ink hover:bg-[#d7b27c]">开始创建这个项目</button>
+            </div>
+          </div>
+        `
+      };
+    }
+
+    function buildChecklistModal() {
+      const project = getCurrentProject();
+      return {
+        title: '交付清单',
+        subtitle: '用来模拟用户点开后核对最终交付内容。',
+        html: `
+          <div class="space-y-4">
+            <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm leading-7 text-smoke/72">
+              当前项目：${project.title}。以下内容将随导出一起交付，可用于视频生成、音乐规划和后期剪辑。
+            </div>
+            <div class="grid gap-3 md:grid-cols-2">
+              ${project.deliverables.map(item => `
+                <label class="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72">
+                  <input type="checkbox" checked class="h-4 w-4 accent-[#b8945f]">
+                  <span>${item}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `
+      };
+    }
+
+    function buildReviewModal() {
+      const segment = getCurrentSegment();
+      return {
+        title: '评审摘要',
+        subtitle: '当前页面模拟了制片 / 导演在关键节点查看建议。',
+        html: `
+          <div class="grid gap-4 md:grid-cols-3">
+            <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-gold">保留</p>
+              <p class="mt-3 text-sm leading-7 text-smoke/74">${segment.title} 的核心冲击点已经明确，悬念和情绪方向成立。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-mist">优化</p>
+              <p class="mt-3 text-sm leading-7 text-smoke/74">建议继续压缩无效铺垫，让前 3 秒更快给出钩子。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-mist">结论</p>
+              <p class="mt-3 text-sm leading-7 text-smoke/74">当前原型已经足以让人理解产品定位与关键交互路径。</p>
+            </div>
+          </div>
+        `
+      };
+    }
+
+    document.addEventListener('click', (event) => {
+      const projectChip = event.target.closest('.project-chip');
+      if (projectChip) {
+        state.currentProject = projectChip.dataset.project;
+        state.currentAspectIndex = 0;
+        state.currentSegmentIndex = 0;
+        state.activityOffset = 0;
+        renderAll();
+        return;
+      }
+
+      const segmentChip = event.target.closest('.segment-chip');
+      if (segmentChip) {
+        state.currentSegmentIndex = Number(segmentChip.dataset.segmentIndex);
+        renderWorkspace();
+        return;
+      }
+
+      const drawerButton = event.target.closest('.open-drawer');
+      if (drawerButton) {
+        openDrawer(drawerButton.dataset.drawerType || 'storyboard');
+        return;
+      }
+
+      const exportAction = event.target.closest('.export-action');
+      if (exportAction) {
+        openModal(buildExportModal(exportAction.dataset.export));
+        return;
+      }
+    });
+
+    document.getElementById('modeToggle').addEventListener('click', () => {
+      state.storyboardEnhanced = !state.storyboardEnhanced;
+      renderWorkspace();
+    });
+
+    document.getElementById('aspectToggle').addEventListener('click', () => {
+      state.currentAspectIndex += 1;
+      renderWorkspace();
+    });
+
+    document.getElementById('shuffleActivityButton').addEventListener('click', () => {
+      const project = getCurrentProject();
+      state.activityOffset = (state.activityOffset + 1) % project.activity.length;
+      renderWorkspace();
+    });
+
+    document.getElementById('openProjectButton').addEventListener('click', () => openModal(buildNewProjectModal()));
+    document.getElementById('openWorkspaceButton').addEventListener('click', () => document.getElementById('workspace').scrollIntoView({ behavior: 'smooth' }));
+    document.getElementById('openStoryboardButton').addEventListener('click', () => { state.storyboardEnhanced = true; state.currentSegmentIndex = Math.min(2, getCurrentProject().segments.length - 1); renderWorkspace(); document.getElementById('workspace').scrollIntoView({ behavior: 'smooth' }); });
+    document.getElementById('openDeliverablesButton').addEventListener('click', () => openModal(buildChecklistModal()));
+    document.getElementById('openChecklistButton').addEventListener('click', () => openModal(buildChecklistModal()));
+    document.getElementById('startReviewButton').addEventListener('click', () => openModal(buildReviewModal()));
+
+    document.getElementById('projectSwitcherButton').addEventListener('click', () => {
+      state.currentProject = state.currentProject === 'rain' ? 'pulse' : 'rain';
+      state.currentAspectIndex = 0;
+      state.currentSegmentIndex = 0;
+      state.activityOffset = 0;
+      renderAll();
+    });
+
+    document.getElementById('exportProjectButtonTop').addEventListener('click', () => openModal(buildExportModal('bundle')));
+    document.getElementById('exportProjectButtonBottom').addEventListener('click', () => openModal(buildExportModal('bundle')));
+    document.getElementById('quickOpenExport').addEventListener('click', () => openModal(buildExportModal('bundle')));
+    document.getElementById('quickOpenDrawer').addEventListener('click', () => openDrawer('character'));
+    document.getElementById('quickToggleMode').addEventListener('click', () => { state.storyboardEnhanced = !state.storyboardEnhanced; renderWorkspace(); });
+    document.getElementById('quickSwitchSegment').addEventListener('click', () => {
+      const project = getCurrentProject();
+      state.currentSegmentIndex = (state.currentSegmentIndex + 1) % project.segments.length;
+      renderWorkspace();
+    });
+
+    drawerBackdrop.addEventListener('click', closeDrawer);
+    document.getElementById('closeDrawerButton').addEventListener('click', closeDrawer);
+    document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+    document.getElementById('closeModalButton').addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeDrawer();
+        closeModal();
+      }
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
