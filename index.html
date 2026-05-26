@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI视频导演台 — 从想法到成片方案，一次推演完整</title>
+  <title>AI视频导演台 — 五个AI角色，接力完成视频前期制作</title>
   <!-- config-version: v7.0.10.1 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
@@ -56,19 +56,43 @@
     @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
     @keyframes stageGlow { 0%, 100% { box-shadow: 0 0 8px rgba(184,148,95,.3); } 50% { box-shadow: 0 0 20px rgba(184,148,95,.6); } }
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInScale { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     @keyframes rain { 0% { transform: translateY(-10vh); } 100% { transform: translateY(110vh); } }
     @keyframes snow { 0% { transform: translateY(-10vh) translateX(0); } 100% { transform: translateY(110vh) translateX(60px); } }
     @keyframes sparkle { 0% { opacity: 0; transform: translateY(0) scale(0); } 50% { opacity: 1; transform: translateY(-40px) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(0); } }
+    @keyframes progressLineGrow { from { transform: scaleY(0); transform-origin: top; } to { transform: scaleY(1); transform-origin: top; } }
+    @keyframes borderGlow { 0%, 100% { border-color: rgba(184,148,95,.15); } 50% { border-color: rgba(184,148,95,.4); } }
+    @keyframes floatUpDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     .pulse-dot { animation: pulse 2s ease-in-out infinite; }
     .stage-active { animation: stageGlow 2.2s ease-in-out infinite; }
     .fade-in-up { animation: fadeInUp .4s ease both; }
+    .fade-in-scale { animation: fadeInScale .45s cubic-bezier(.16,1,.3,1) both; }
+    .slide-in-right { animation: slideInRight .4s cubic-bezier(.16,1,.3,1) both; }
     .toast-pop { animation: toastIn .32s ease, toastOut .32s ease 2.5s forwards; }
     .rain-drop { position: fixed; top: -10vh; width: 1px; height: 18px; background: linear-gradient(transparent, rgba(255,255,255,.25)); animation: rain linear infinite; pointer-events: none; z-index: 90; }
     .snow-flake { position: fixed; top: -10vh; width: 4px; height: 4px; background: rgba(255,255,255,.5); border-radius: 50%; animation: snow linear infinite; pointer-events: none; z-index: 90; }
     .sparkle-dot { position: fixed; width: 2px; height: 2px; background: #d3b17a; border-radius: 50%; animation: sparkle ease-in infinite; pointer-events: none; z-index: 90; }
-    .skeleton { background: linear-gradient(90deg, #131b25 25%, #1b2230 50%, #131b25 75%); background-size: 200% 100%; animation: sweep 1.8s ease-in-out infinite; border-radius: 8px; }
+    /* Skeleton: shimmer effect */
+    .skeleton { background: linear-gradient(120deg, #111821 0%, #1a2432 40%, #111821 70%); background-size: 200% 100%; animation: shimmer 2.2s ease-in-out infinite; border-radius: 8px; }
+    .skeleton-avatar { border-radius: 50%; background: linear-gradient(120deg, #111821 0%, #1e2a3a 40%, #111821 70%); background-size: 200% 100%; animation: shimmer 2.2s ease-in-out infinite; }
+    /* Card texture overlay */
+    .grain-overlay::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .035; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); background-size: 200px 200px; border-radius: inherit; }
+    /* Asset chip */
+    .asset-chip { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); border-radius: 999px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.65); transition: all .22s ease; }
+    .asset-chip:hover { background: rgba(184,148,95,.08); border-color: rgba(184,148,95,.25); color: #d3b17a; }
+    /* Stage transition */
+    .stage-card-enter { animation: fadeInScale .45s cubic-bezier(.16,1,.3,1) both; }
+    #loadingHint { transition: opacity .2s ease; }
+    /* Gold accent line */
+    .gold-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(184,148,95,.3), transparent); }
+    @media (max-width: 1024px) {
+      .asset-panel-mobile { max-height: 320px; }
+    }
     @media (max-width: 640px) {
       :root { --shell-width: calc(100vw - 18px); }
+      .hide-mobile { display: none; }
     }
   </style>
 </head>
@@ -145,9 +169,12 @@
         </div>
 
         <!-- CENTER: Stage Card -->
-        <div id="stageCard" class="relative overflow-hidden rounded-[28px] border border-white/6 bg-panel/82 shadow-panel panel-frame noise min-h-[460px] md:min-h-[520px]">
-          <div class="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent"></div>
-          <!-- Content rendered by JS -->
+        <div id="stageCard" class="relative overflow-hidden rounded-[28px] border border-white/6 bg-panel/82 shadow-panel panel-frame noise grain-overlay min-h-[460px] md:min-h-[520px]">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent pointer-events-none"></div>
+          <div id="stageCardInner" class="relative z-10">
+
+
+          </div>
         </div>
 
         <!-- RIGHT: Asset Panel -->
@@ -169,34 +196,34 @@
     <section id="workflow" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">5-Stage Pipeline</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">五大创作阶段，一步一确认</h3>
-        <p class="mt-2 text-sm text-mist max-w-xl">不做一次性生成。编剧→导演→服化道→音乐→分镜，每一步用户审核确认后才进下一步。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">五个AI角色，接力完成前期制作</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl">不是和单个AI来回聊天。编剧、导演、服化道、音乐、分镜——每个角色专精一件事，你审核确认后再交棒给下一位。</p>
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-pencil text-lg"></i></div>
           <p class="text-sm font-semibold text-white">① 编剧</p>
-          <p class="mt-1 text-xs text-mist leading-relaxed">输入想法或上传剧本，AI 编剧拆解叙事结构</p>
+          <p class="mt-1 text-xs text-mist leading-relaxed">输入一句话想法或上传完整剧本，AI 编剧拆解为 3-4 个叙事段落</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slateBlue/40 text-white mb-3"><i class="fa fa-video-camera text-lg"></i></div>
           <p class="text-sm font-semibold text-white">② 导演</p>
-          <p class="mt-1 text-xs text-mist leading-relaxed">导演做节拍分析、人物场景道具清单</p>
+          <p class="mt-1 text-xs text-mist leading-relaxed">节拍分析、人物小传、场景清单、关键道具——导演视角的整体把控</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-paint-brush text-lg"></i></div>
           <p class="text-sm font-semibold text-white">③ 服化道</p>
-          <p class="mt-1 text-xs text-mist leading-relaxed">设计角色外观、场景气氛、关键道具</p>
+          <p class="mt-1 text-xs text-mist leading-relaxed">角色外观、服装材质、场景气氛、道具设计，可直接喂给生图 AI</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slateBlue/40 text-white mb-3"><i class="fa fa-music text-lg"></i></div>
           <p class="text-sm font-semibold text-white">④ 音乐</p>
-          <p class="mt-1 text-xs text-mist leading-relaxed">设计配乐方案、Suno 提示词、环境音</p>
+          <p class="mt-1 text-xs text-mist leading-relaxed">曲风定调、BPM、情绪曲线、Suno 提示词，音乐总监一站式出方案</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-film text-lg"></i></div>
           <p class="text-sm font-semibold text-white">⑤ 分镜</p>
-          <p class="mt-1 text-xs text-mist leading-relaxed">生成视频提示词 + 故事板增强 + 交付清单</p>
+          <p class="mt-1 text-xs text-mist leading-relaxed">每个段落的视频提示词 + 故事板 + 交付清单，直接对接 Seedance/可灵/Runway</p>
         </div>
       </div>
     </section>
@@ -205,7 +232,8 @@
     <section id="pricing" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12 text-center">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Pricing</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">选择适合你的方案</h3>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">从免费开始，按需升级</h3>
+        <p class="mt-2 text-sm text-mist">没有隐藏费用。所有方案都包含完整的 5 步工作流。</p>
       </div>
       <div class="grid gap-5 md:grid-cols-3 max-w-4xl mx-auto">
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center">
@@ -213,8 +241,9 @@
           <p class="mt-2 text-3xl font-bold text-white">¥0</p>
           <p class="mt-1 text-xs text-mist">每月 3 次完整生成</p>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
-            <li><i class="fa fa-check text-gold mr-1"></i> 5 步完整流程</li>
-            <li><i class="fa fa-check text-gold mr-1"></i> 基础交付物导出</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 完整 5 步创作流程</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 基础资产导出</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 3 次/月生成额度</li>
           </ul>
           <button class="mt-5 w-full rounded-full border border-gold/30 py-2 text-sm text-gold interactive hover:bg-gold/10">免费开始</button>
         </div>
@@ -224,26 +253,27 @@
             <span class="inline-block rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold mb-2">推荐</span>
             <p class="text-sm font-semibold text-white">专业版</p>
             <p class="mt-2 text-3xl font-bold text-white">¥68<span class="text-sm text-mist">/月</span></p>
-            <p class="mt-1 text-xs text-mist">无限次生成</p>
+            <p class="mt-1 text-xs text-mist">无限次生成，优先模型队列</p>
             <ul class="mt-4 space-y-2 text-xs text-mist text-left">
               <li><i class="fa fa-check text-gold mr-1"></i> 全部免费功能</li>
+              <li><i class="fa fa-check text-gold mr-1"></i> 无限次生成</li>
               <li><i class="fa fa-check text-gold mr-1"></i> 故事板增强模式</li>
-              <li><i class="fa fa-check text-gold mr-1"></i> 优先模型队列</li>
-              <li><i class="fa fa-check text-gold mr-1"></i> 项目导出与分享</li>
+              <li><i class="fa fa-check text-gold mr-1"></i> 项目云端保存与分享</li>
             </ul>
-            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">开始订阅</button>
+            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">立即订阅</button>
           </div>
         </div>
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center">
           <p class="text-sm font-semibold text-white">团队版</p>
           <p class="mt-2 text-3xl font-bold text-white">¥188<span class="text-sm text-mist">/月</span></p>
-          <p class="mt-1 text-xs text-mist">多人协作</p>
+          <p class="mt-1 text-xs text-mist">多人协作 + API 接入</p>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
             <li><i class="fa fa-check text-gold mr-1"></i> 全部专业版功能</li>
-            <li><i class="fa fa-check text-gold mr-1"></i> 团队项目管理</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 最多 5 人协作</li>
             <li><i class="fa fa-check text-gold mr-1"></i> API 接入权限</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 优先技术支持</li>
           </ul>
-          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">联系团队销售</button>
+          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">联系销售</button>
         </div>
       </div>
     </section>
@@ -257,31 +287,31 @@
       <div class="space-y-3" id="faqList">
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
-            这跟直接去 AI 对话框聊天有什么不同？
+            这和跟 AI 对话框聊天有什么区别？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">AI 对话框只给你文字回复。我们把专业影视制作的 5 个角色整合成流水线——编剧、导演、服化道、音乐、分镜——每一步产出结构化的资产，而不是散乱的聊天记录。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">AI 对话框给你的是散乱的文字回复，没有结构、没有资产沉淀。我们把专业影视制作的五个角色——编剧、导演、服化道、音乐、分镜——整合成接力流水线，每一步产出可复用的结构化资产，而不是聊天记录。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
-            每一步我必须确认才能继续吗？
+            每一步必须手动确认才能继续吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">是的，这是刻意设计的。我们的哲学是"做好一步再做下一步"。但你可以随时回到前面修改，后面的资产会自动同步更新。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">是的，这是刻意设计的。好的创作需要人在回路中做判断——AI 负责发散和产出，你负责审美和决策。当然，你也可以随时回到前面任何一步修改，后续资产会自动同步更新。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
-            生成的内容能直接用来做视频吗？
+            生成的内容能直接拿来用吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">可以。每条视频提示词都按照 Seedance、可灵、Runway 的要求编写，包含镜头语言、光线、构图、动作描述，可以直接粘贴使用。角色和场景提示词也可以直接喂给 AI 生图工具。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">能。每条视频提示词都按照 Seedance、可灵、Runway 的输入标准编写，包含镜头语言、光线、构图、动作描述，复制粘贴就能用。角色和场景设计提示词也可以直接喂给 Midjourney 或 SD 出图。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
-            我已有现成剧本，还需要从编剧开始吗？
+            我已经有现成剧本了，还需要从编剧开始吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">不需要。在编剧步骤切换到"已有剧本"模式，粘贴或上传你的剧本，会自动跳过编剧直接从导演分析开始。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">不需要。在编剧步骤切换到"已有剧本"，粘贴或上传你的剧本后，系统会直接跳到导演分析——跳过编剧，从导演开始你的 4 步流程。</div>
         </div>
       </div>
     </section>
@@ -298,7 +328,7 @@
               <p class="text-base font-semibold tracking-[0.18em] text-white">AI视频导演台</p>
             </div>
           </div>
-          <p class="mt-4 text-sm leading-7 text-smoke/65">把专业影视前期制作流程，变成每个创作者都能上手的智能体协作界面。</p>
+          <p class="mt-4 text-sm leading-7 text-smoke/65">把专业影视前期制作流程——编剧、导演、服化道、音乐、分镜——变成每个创作者都能上手的 AI 协作界面。</p>
         </div>
         <div class="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
           <div>
@@ -515,27 +545,28 @@ function handleProgressClick(n) {
 
 // ===== RENDER: STAGE CARD =====
 function renderStageCard() {
-  const card = $('#stageCard');
+  const card = $('#stageCardInner');
   const s = STAGES[state.stage - 1];
   const st = state.stages[state.stage];
 
   // Loading state
   if (st.status === 'loading') {
     card.innerHTML = `
-      <div class="relative p-6 md:p-10 flex flex-col items-center justify-center min-h-[460px] md:min-h-[520px] text-center">
-        <div class="flex h-20 w-20 items-center justify-center rounded-full border-2 border-gold/40 bg-gold/10 stage-active mb-6">
-          <i class="fa fa-${s.icon} text-2xl text-gold"></i>
+      <div class="flex flex-col items-center justify-center min-h-[460px] md:min-h-[520px] text-center px-6">
+        <div class="relative mb-6">
+          <div class="skeleton-avatar h-20 w-20"></div>
+          <div class="absolute inset-0 rounded-full border-2 border-gold/30 stage-active"></div>
         </div>
         <p class="text-lg font-semibold text-white mb-2">${s.role} 正在工作中...</p>
-        <div class="space-y-3 w-full max-w-sm mt-4">
-          <div class="skeleton h-4 w-full"></div>
-          <div class="skeleton h-4 w-3/4"></div>
-          <div class="skeleton h-4 w-5/6"></div>
-          <div class="skeleton h-16 w-full mt-4"></div>
+        <p class="text-sm text-mist/60 mb-8" id="loadingHint">正在调用 AI 模型，请耐心等待</p>
+        <div class="space-y-3 w-full max-w-sm">
+          <div class="skeleton h-3 w-full"></div>
+          <div class="skeleton h-3 w-3/4"></div>
+          <div class="skeleton h-3 w-5/6"></div>
+          <div class="skeleton h-20 w-full mt-4"></div>
         </div>
-        <p id="loadingHint" class="mt-6 text-xs text-mist/60 animate-pulse">正在调用 AI 模型，请耐心等待...</p>
       </div>`;
-    setTimeout(() => updateLoadingHint(), 8000);
+    startLoadingHints();
     return;
   }
 
@@ -577,7 +608,7 @@ function renderStageCard() {
   }
 
   card.innerHTML = `
-    <div class="relative p-6 md:p-10 flex flex-col min-h-[460px] md:min-h-[520px]">
+    <div class="stage-card-enter relative p-6 md:p-10 flex flex-col min-h-[460px] md:min-h-[520px]">
       <!-- Header -->
       <div class="flex items-center gap-4 mb-6">
         <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-gold/35 bg-gold/10 ${st.status === 'active' ? 'stage-active' : ''}">
@@ -639,20 +670,54 @@ function buildFooterButtons(stageId, st) {
   return btns;
 }
 
-function updateLoadingHint() {
+// ===== LOADING HINTS =====
+const LOADING_HINTS = [
+  '正在调用 AI 模型，请耐心等待',
+  '深度思考中，复杂内容需要更多时间...',
+  'AI 正在仔细推敲每个细节',
+  '马上就好，精彩内容值得等待',
+  '正在润色输出，确保专业品质'
+];
+let loadingHintTimer = null;
+let loadingHintIndex = 0;
+
+function startLoadingHints() {
+  loadingHintIndex = 0;
+  if (loadingHintTimer) clearInterval(loadingHintTimer);
   const hint = $('#loadingHint');
-  if (hint) hint.textContent = 'AI 模型仍在思考中，复杂内容可能需要更长时间...';
+  if (hint) hint.textContent = LOADING_HINTS[0];
+  loadingHintTimer = setInterval(() => {
+    loadingHintIndex = (loadingHintIndex + 1) % LOADING_HINTS.length;
+    const el = $('#loadingHint');
+    if (el) { el.style.opacity = '0'; setTimeout(() => { el.textContent = LOADING_HINTS[loadingHintIndex]; el.style.opacity = '1'; }, 200); }
+    else { clearInterval(loadingHintTimer); loadingHintTimer = null; }
+  }, 7000);
 }
 
 // ===== RENDER: RESULT SECTIONS =====
 function renderSegmentsResult(data) {
-  let html = `<div class="mb-4"><p class="text-xl font-semibold text-white">${data.projectTitle||'未命名'}</p><p class="text-sm text-mist mt-1">${data.projectBrief||''}</p></div>`;
+  let html = `<div class="mb-5">
+    <div class="flex items-start gap-3">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10 mt-0.5"><i class="fa fa-star text-gold text-sm"></i></div>
+      <div>
+        <p class="text-xl font-semibold text-white">${data.projectTitle||'未命名项目'}</p>
+        <p class="text-sm text-mist/80 mt-0.5">${data.projectBrief||''}</p>
+      </div>
+    </div>
+  </div>`;
   html += '<div class="space-y-3">';
-  (data.segments||[]).forEach(seg => {
-    html += `<div class="rounded-xl border border-white/6 bg-white/[0.02] p-4 fade-in-up">
-      <div class="flex items-center gap-2 mb-2"><span class="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold">${seg.id}</span><span class="text-sm font-medium text-white">${seg.title}</span><span class="ml-auto text-[11px] text-mist">${seg.duration||''}</span></div>
-      <p class="text-xs text-mist leading-relaxed">${seg.goal||''}</p>
-      <p class="text-xs text-mist/70 mt-1">👤 ${seg.characters||'—'} · 📍 ${seg.scene||'—'}</p>
+  (data.segments||[]).forEach((seg, i) => {
+    html += `<div class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-4 fade-in-up" style="animation-delay:${i*0.08}s">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-medium text-gold tracking-wider">${seg.id}</span>
+        <span class="text-sm font-medium text-white">${seg.title}</span>
+        <span class="ml-auto text-[11px] text-mist/60 bg-white/[0.03] rounded-full px-2 py-0.5">${seg.duration||''}</span>
+      </div>
+      <p class="text-xs text-mist/80 leading-relaxed">${seg.goal||''}</p>
+      <div class="flex gap-3 mt-2 text-[11px] text-mist/50">
+        <span><i class="fa fa-user mr-1 text-mist/40"></i>${seg.characters||'—'}</span>
+        <span><i class="fa fa-map-marker mr-1 text-mist/40"></i>${seg.scene||'—'}</span>
+      </div>
     </div>`;
   });
   html += '</div>';
@@ -660,25 +725,43 @@ function renderSegmentsResult(data) {
 }
 
 function renderDirectorResult(data) {
-  let html = `<div class="mb-4 rounded-xl border border-gold/10 bg-gold/[0.03] p-4"><p class="text-xs text-mist uppercase tracking-wider mb-1">导演阐述</p><p class="text-sm text-white leading-relaxed">${data.directorNotes||''}</p></div>`;
+  let html = `<div class="mb-4 rounded-xl border border-gold/10 bg-gradient-to-r from-gold/[0.04] to-transparent p-4">
+    <div class="flex items-center gap-2 mb-2"><div class="h-6 w-6 rounded-lg bg-gold/10 flex items-center justify-center"><i class="fa fa-quote-left text-[10px] text-gold/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">导演阐述</p></div>
+    <p class="text-sm text-white leading-relaxed">${data.directorNotes||''}</p>
+  </div>`;
   html += '<div class="grid gap-3 sm:grid-cols-2">';
-  html += '<div class="rounded-xl border border-white/6 bg-white/[0.02] p-3"><p class="text-[11px] text-mist uppercase mb-2">👤 人物清单</p>';
-  (data.characterList||[]).forEach(c => html += `<p class="text-xs text-white/80">${c.name} <span class="text-mist/60">${c.role}</span></p>`);
-  html += '</div><div class="rounded-xl border border-white/6 bg-white/[0.02] p-3"><p class="text-[11px] text-mist uppercase mb-2">📍 场景清单</p>';
-  (data.sceneList||[]).forEach(s => html += `<p class="text-xs text-white/80">${s.name} <span class="text-mist/60">${s.type}</span></p>`);
+  html += '<div class="rounded-xl border border-white/6 bg-white/[0.02] p-4"><div class="flex items-center gap-2 mb-3"><div class="h-6 w-6 rounded-lg bg-slateBlue/30 flex items-center justify-center"><i class="fa fa-users text-[11px] text-white/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">人物清单</p></div>';
+  (data.characterList||[]).forEach(c => html += `<div class="flex items-center justify-between py-1.5 border-b border-white/4 last:border-0"><span class="text-xs text-white/80">${c.name}</span><span class="text-[10px] text-mist/50">${c.role}</span></div>`);
+  html += '</div><div class="rounded-xl border border-white/6 bg-white/[0.02] p-4"><div class="flex items-center gap-2 mb-3"><div class="h-6 w-6 rounded-lg bg-slateBlue/30 flex items-center justify-center"><i class="fa fa-map-marker text-[11px] text-white/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">场景清单</p></div>';
+  (data.sceneList||[]).forEach(s => html += `<div class="flex items-center justify-between py-1.5 border-b border-white/4 last:border-0"><span class="text-xs text-white/80">${s.name}</span><span class="text-[10px] text-mist/50">${s.type}</span></div>`);
   html += '</div></div>';
+  if (data.beatAnalysis && data.beatAnalysis.length) {
+    html += '<div class="mt-3 rounded-xl border border-white/6 bg-white/[0.02] p-4"><p class="text-[11px] text-mist uppercase tracking-wider mb-3">🎬 节拍分析</p>';
+    data.beatAnalysis.forEach(b => {
+      html += `<div class="mb-2 pb-2 border-b border-white/4 last:border-0 last:mb-0 last:pb-0"><span class="text-[10px] text-gold/70 bg-gold/10 rounded-full px-2 py-0.5 mr-2">${b.segmentId}</span><span class="text-xs text-white/70">${b.beatGoal||''}</span><p class="text-[11px] text-mist/50 mt-1">📷 ${b.cameraStyle||''} · ⏱ ${b.pacing||''}</p></div>`;
+    });
+    html += '</div>';
+  }
   return html;
 }
 
 function renderDesignResult(data) {
   let html = '<div class="grid gap-4 sm:grid-cols-2">';
-  html += '<div><p class="text-[11px] text-mist uppercase mb-2">🎭 角色设计</p>';
-  (data.characters||[]).forEach(c => {
-    html += `<div class="rounded-xl border border-white/6 bg-white/[0.02] p-3 mb-2 fade-in-up"><p class="text-sm font-medium text-white">${c.name} <span class="text-xs text-mist">${c.role}</span></p><p class="text-xs text-mist/80 mt-1">${c.designNotes||''}</p></div>`;
+  html += '<div><div class="flex items-center gap-2 mb-3"><div class="h-6 w-6 rounded-lg bg-gold/10 flex items-center justify-center"><i class="fa fa-user-circle-o text-[11px] text-gold/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">角色设计</p></div>';
+  (data.characters||[]).forEach((c, i) => {
+    html += `<div class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-3 mb-2 fade-in-up" style="animation-delay:${i*0.08}s">
+      <div class="flex items-center justify-between"><p class="text-sm font-medium text-white">${c.name}</p><span class="text-[10px] text-mist/50 bg-white/[0.03] rounded-full px-2 py-0.5">${c.role}</span></div>
+      <p class="text-xs text-mist/60 mt-1">${c.ageAppearance||''}${c.costume?' · '+c.costume:''}</p>
+      <p class="text-xs text-mist/80 mt-1.5 leading-relaxed">${c.designNotes||''}</p>
+    </div>`;
   });
-  html += '</div><div><p class="text-[11px] text-mist uppercase mb-2">🏞 场景设计</p>';
-  (data.scenes||[]).forEach(s => {
-    html += `<div class="rounded-xl border border-white/6 bg-white/[0.02] p-3 mb-2 fade-in-up"><p class="text-sm font-medium text-white">${s.name} <span class="text-xs text-mist">${s.type}</span></p><p class="text-xs text-mist/80 mt-1">${s.designNotes||''}</p></div>`;
+  html += '</div><div><div class="flex items-center gap-2 mb-3"><div class="h-6 w-6 rounded-lg bg-slateBlue/30 flex items-center justify-center"><i class="fa fa-picture-o text-[11px] text-white/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">场景设计</p></div>';
+  (data.scenes||[]).forEach((s, i) => {
+    html += `<div class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-3 mb-2 fade-in-up" style="animation-delay:${i*0.08}s">
+      <div class="flex items-center justify-between"><p class="text-sm font-medium text-white">${s.name}</p><span class="text-[10px] text-mist/50 bg-white/[0.03] rounded-full px-2 py-0.5">${s.type}</span></div>
+      <p class="text-xs text-mist/60 mt-1">${s.lighting||''}${s.mood?' · '+s.mood:''}</p>
+      <p class="text-xs text-mist/80 mt-1.5 leading-relaxed">${s.designNotes||''}</p>
+    </div>`;
   });
   html += '</div></div>';
   return html;
@@ -702,11 +785,27 @@ function renderMusicResult(data) {
 
 function renderStoryboardResult(data) {
   let html = '<div class="space-y-3">';
-  (data.videoPrompts||[]).forEach(vp => {
-    html += `<div class="rounded-xl border border-white/6 bg-white/[0.02] p-4 fade-in-up"><span class="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold">${vp.segmentId}</span><p class="text-sm text-white mt-2 leading-relaxed">${vp.prompt||''}</p></div>`;
+  (data.videoPrompts||[]).forEach((vp, i) => {
+    html += `<div class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-4 fade-in-up" style="animation-delay:${i*0.08}s">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-medium text-gold tracking-wider">${vp.segmentId}</span>
+        <span class="text-[11px] text-mist/50 uppercase tracking-wider">视频生成提示词</span>
+      </div>
+      <p class="text-sm text-white/90 leading-relaxed">${vp.prompt||''}</p>
+    </div>`;
   });
   html += '</div>';
-  if (data.advice) html += `<div class="mt-4 rounded-xl border border-gold/10 bg-gold/[0.03] p-4"><p class="text-[11px] text-mist uppercase mb-1">💡 制片建议</p><p class="text-sm text-white leading-relaxed">${data.advice}</p></div>`;
+  if (data.advice) {
+    html += `<div class="mt-4 rounded-xl border border-gold/10 bg-gradient-to-r from-gold/[0.04] to-transparent p-4">
+      <div class="flex items-center gap-2 mb-2"><div class="h-6 w-6 rounded-lg bg-gold/10 flex items-center justify-center"><i class="fa fa-lightbulb-o text-[11px] text-gold/60"></i></div><p class="text-[11px] text-mist uppercase tracking-wider">制片建议</p></div>
+      <p class="text-sm text-white/80 leading-relaxed">${data.advice}</p>
+    </div>`;
+  }
+  if (data.checklist && data.checklist.length) {
+    html += '<div class="mt-3 rounded-xl border border-white/6 bg-white/[0.02] p-4"><p class="text-[11px] text-mist uppercase tracking-wider mb-3">📋 交付清单</p>';
+    data.checklist.forEach((item, i) => html += `<div class="flex items-center gap-2 py-1"><div class="h-4 w-4 rounded-full bg-green-500/10 flex items-center justify-center shrink-0"><i class="fa fa-check text-[8px] text-green-400"></i></div><span class="text-xs text-white/70">${item}</span></div>`);
+    html += '</div>';
+  }
   return html;
 }
 
@@ -839,7 +938,14 @@ function renderAssetPanel() {
   const assets = state._assets || [];
 
   if (!assets.length) {
-    list.innerHTML = '<div class="px-4 py-8 text-center text-sm text-mist/50">完成编剧后将<br>自动产出设计资产</div>';
+    list.innerHTML = `
+      <div class="px-4 py-10 text-center">
+        <div class="flex h-14 w-14 items-center justify-center rounded-full border border-white/8 bg-white/[0.02] mx-auto mb-4">
+          <i class="fa fa-inbox text-xl text-mist/30"></i>
+        </div>
+        <p class="text-sm text-mist/50">完成编剧后将</p>
+        <p class="text-sm text-mist/50">自动产出设计资产</p>
+      </div>`;
     count.textContent = '0 项';
     return;
   }
@@ -847,13 +953,22 @@ function renderAssetPanel() {
   count.textContent = `${assets.reduce((s, a) => s + a.items.length, 0)} 项`;
   let html = '';
   assets.forEach((a, i) => {
-    html += `<div class="px-4 py-3 fade-in-up" style="animation-delay:${i*0.08}s">
-      <p class="text-[10px] uppercase tracking-[0.25em] text-mist/60 mb-1.5"><i class="fa ${a.icon} mr-1"></i>${a.type}</p>
-      <div class="flex flex-wrap gap-1.5">`;
+    html += `<div class="px-4 py-3 slide-in-right" style="animation-delay:${i*0.06}s">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/10">
+          <i class="fa ${a.icon} text-[11px] text-gold/70"></i>
+        </div>
+        <p class="text-[10px] uppercase tracking-[0.25em] text-mist/60">${a.type}</p>
+        <span class="ml-auto text-[10px] text-mist/40">${a.items.length}</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5 pl-8">`;
     a.items.forEach(item => {
-      html += `<span class="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] text-smoke/70">${item}</span>`;
+      html += `<span class="asset-chip">${item}</span>`;
     });
     html += '</div></div>';
+    if (i < assets.length - 1) {
+      html += '<div class="mx-4"><div class="gold-line"></div></div>';
+    }
   });
   list.innerHTML = html;
 }
