@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI视频导演台 — 从想法到成片方案，一次推演完整</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#070a10', panel: '#0d131b', panelSoft: '#131b25',
+            line: '#273142', lineSoft: '#1b2230', mist: '#8894a9', smoke: '#d6dce7',
+            gold: '#b8945f', goldSoft: '#8e6b3f', steel: '#1a2534', slateBlue: '#213047', accent: '#d3b17a'
+          },
+          boxShadow: {
+            panel: '0 28px 80px rgba(0,0,0,.42)',
+            glow: '0 0 0 1px rgba(184,148,95,.18), 0 18px 50px rgba(0,0,0,.38)',
+            soft: '0 14px 34px rgba(0,0,0,.28)'
+          },
+          backgroundImage: {
+            grid: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+            glow: 'radial-gradient(circle at top, rgba(184,148,95,.18), transparent 42%)',
+            sweep: 'linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent)',
+            edge: 'linear-gradient(90deg, rgba(184,148,95,0), rgba(184,148,95,.8), rgba(184,148,95,0))'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --shell-width: min(1920px, calc(100vw - clamp(24px, 4vw, 72px)));
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background:
+        radial-gradient(circle at 16% 10%, rgba(184,148,95,.13), transparent 24%),
+        radial-gradient(circle at 88% 16%, rgba(68,90,124,.16), transparent 24%),
+        linear-gradient(180deg, #06080d 0%, #080c12 38%, #06090f 100%);
+    }
+    .shell { width: var(--shell-width); margin-inline: auto; padding-inline: clamp(18px, 2vw, 32px); }
+    .panel-frame::before { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px solid rgba(184,148,95,.14); pointer-events: none; }
+    .noise { background-image: linear-gradient(rgba(255,255,255,.02), rgba(255,255,255,.02)), radial-gradient(circle at 20% 20%, rgba(255,255,255,.025), transparent 16%), radial-gradient(circle at 82% 30%, rgba(255,255,255,.02), transparent 15%); }
+    .metric-shimmer { position: relative; overflow: hidden; }
+    .metric-shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-130%); background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.1) 50%, transparent 80%); animation: sweep 4.6s linear infinite; }
+    .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+    .float-card { transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease; }
+    .float-card:hover { transform: translateY(-4px); border-color: rgba(184,148,95,.28); box-shadow: 0 18px 48px rgba(0,0,0,.28); }
+    .interactive { transition: transform .24s ease, border-color .24s ease, background-color .24s ease, color .24s ease, box-shadow .24s ease; }
+    .interactive:hover { transform: translateY(-1px); }
+    .active-chip { background: rgba(184,148,95,.12); border-color: rgba(184,148,95,.35); color: #f2d4a0; box-shadow: 0 0 0 1px rgba(184,148,95,.08) inset; }
+    .timeline-track { scrollbar-width: none; }
+    .timeline-track::-webkit-scrollbar { display: none; }
+    .drawer-enter, .modal-enter { opacity: 0; transform: translateY(10px); }
+    .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .toast-pop { animation: toastIn .32s ease, toastOut .32s ease 2.5s forwards; }
+    @keyframes sweep { to { transform: translateX(130%); } }
+    @keyframes pulse { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1); } }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
+    @keyframes countUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .count-anim { animation: countUp .5s ease both; }
+    @media (max-width: 640px) {
+      :root { --shell-width: calc(100vw - 18px); }
+    }
+  </style>
+</head>
+<body class="text-smoke antialiased selection:bg-gold/30 selection:text-white">
+  <div class="fixed inset-0 pointer-events-none opacity-30 bg-grid bg-[size:32px_32px]"></div>
+  <div class="fixed inset-x-0 top-0 h-72 pointer-events-none bg-glow"></div>
+  <div class="fixed inset-y-0 left-0 w-px pointer-events-none bg-gradient-to-b from-transparent via-gold/15 to-transparent hidden xl:block"></div>
+  <div class="fixed inset-y-0 right-0 w-px pointer-events-none bg-gradient-to-b from-transparent via-gold/15 to-transparent hidden xl:block"></div>
+
+  <header id="header" class="sticky top-0 z-40 border-b border-white/6 bg-ink/78 backdrop-blur-xl">
+    <div class="shell flex items-center justify-between gap-4 py-4">
+      <div class="flex min-w-0 items-center gap-3 sm:gap-4">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-gold/35 bg-panel shadow-glow sm:h-11 sm:w-11">
+          <i class="fa fa-play-circle text-lg text-gold"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-[10px] uppercase tracking-[0.38em] text-mist">Cinematic pre-production system</p>
+          <h1 class="truncate text-sm font-semibold tracking-[0.18em] text-white sm:text-base">AI视频导演台</h1>
+        </div>
+      </div>
+
+      <nav id="mainNav" class="hidden items-center gap-6 text-sm text-mist lg:flex xl:gap-8">
+        <a href="#workflow" class="nav-link interactive hover:text-white">工作流</a>
+        <a href="#workspace" class="nav-link interactive hover:text-white">导演台</a>
+        <a href="#comparison" class="nav-link interactive hover:text-white">模式对比</a>
+        <a href="#assets-board" class="nav-link interactive hover:text-white">资产设定</a>
+        <a href="#deliverables" class="nav-link interactive hover:text-white">交付中心</a>
+        <a href="#pricing" class="nav-link interactive hover:text-white">方案</a>
+        <a href="#faq" class="nav-link interactive hover:text-white">FAQ</a>
+      </nav>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="projectSwitcherButton" class="interactive hidden rounded-full border border-white/10 px-3 py-2 text-sm text-mist hover:border-gold/30 hover:text-white md:inline-flex">切换案例</button>
+        <button id="openProjectButton" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-mist hover:border-gold/30 hover:text-white sm:px-4">新建项目</button>
+        <button id="exportProjectButtonTop" class="interactive rounded-full bg-gold px-3 py-2 text-sm font-semibold text-ink hover:bg-[#d7b27c] sm:px-4">导出</button>
+        <button id="mobileMenuToggle" class="interactive ml-1 rounded-full border border-white/12 p-2 text-mist hover:text-white lg:hidden">
+          <i class="fa fa-bars text-lg"></i>
+        </button>
+      </div>
+    </div>
+    <nav id="mobileMenu" class="hidden border-t border-white/8 bg-ink/96 px-6 py-4 lg:hidden">
+      <div class="flex flex-col gap-3 text-sm text-mist">
+        <a href="#workflow" class="mobile-nav-link interactive py-2 hover:text-white">工作流</a>
+        <a href="#workspace" class="mobile-nav-link interactive py-2 hover:text-white">导演台</a>
+        <a href="#comparison" class="mobile-nav-link interactive py-2 hover:text-white">模式对比</a>
+        <a href="#assets-board" class="mobile-nav-link interactive py-2 hover:text-white">资产设定</a>
+        <a href="#deliverables" class="mobile-nav-link interactive py-2 hover:text-white">交付中心</a>
+        <a href="#pricing" class="mobile-nav-link interactive py-2 hover:text-white">方案</a>
+        <a href="#faq" class="mobile-nav-link interactive py-2 hover:text-white">FAQ</a>
+      </div>
+    </nav>
+  </header>
+
+  <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition"></div>
+
+  <main>
+    <section class="shell pt-6 md:pt-10 xl:pt-14">
+      <div class="grid gap-5 xl:grid-cols-[minmax(380px,540px)_minmax(0,1fr)] 2xl:grid-cols-[580px_minmax(0,1fr)]">
+        <div class="relative flex flex-col justify-center rounded-[30px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame noise md:p-8">
+          <div class="inline-flex items-center gap-3 rounded-full border border-gold/18 bg-white/[0.02] px-4 py-2 text-[11px] uppercase tracking-[0.34em] text-mist">
+            <span class="pulse-dot h-2 w-2 rounded-full bg-gold"></span>for serious video creators
+          </div>
+          <h2 class="mt-6 max-w-[14ch] text-[2.5rem] font-semibold leading-[1] text-white sm:text-5xl xl:text-[3.8rem]">
+            让一个想法，<span class="text-gold">像成片一样被推演完整。</span>
+          </h2>
+          <p class="mt-5 max-w-xl text-base leading-8 text-smoke/78 xl:text-lg">
+            不再是给几段提示词就完事。五个 AI 智能体组成真正的影视前期团队——编剧、导演、服化道、音乐总监、分镜师——接力协作，把一个想法拆成角色、场景、段落、音乐和可直接喂给视频工具的生成清单。让专业前制流程，变成创作者能看懂的界面。
+          </p>
+          <div class="mt-7 flex flex-wrap gap-3">
+            <button id="enterWorkspace" class="interactive rounded-full bg-gold px-6 py-3 font-semibold text-ink hover:bg-[#d7b27c]">体验导演工作台</button>
+            <button id="openComparisonButton" class="interactive rounded-full border border-white/10 px-6 py-3 text-sm text-smoke hover:border-gold/30 hover:text-white">了解故事板增强</button>
+          </div>
+          <div class="mt-8 grid gap-3 sm:grid-cols-3">
+            <div class="float-card rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">创作入口</p>
+              <p class="mt-2 text-base font-semibold text-white sm:text-lg">灵感 · 剧本 · 参考图</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">一句选题、完整剧本、一张参考风格图，都能启动一个项目。</p>
+            </div>
+            <div class="float-card rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">差异化能力</p>
+              <p class="mt-2 text-base font-semibold text-white sm:text-lg">关键段落故事板增强</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">只对复杂段落开启分镜预演，控制走位、眼神、推门节奏。</p>
+            </div>
+            <div class="float-card rounded-2xl border border-white/6 bg-panelSoft/72 p-4">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">最终交付</p>
+              <p class="mt-2 text-base font-semibold text-white sm:text-lg">可直接生成 · 可剪辑</p>
+              <p class="mt-2 text-sm leading-6 text-smoke/65">角色板、场景板、视频提示词、故事板、音乐清单一次拿齐。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/84 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/10 via-transparent to-slateBlue/25"></div>
+          <div class="relative p-4 md:p-5 xl:p-6">
+            <div class="flex flex-col gap-4 border-b border-white/8 pb-4 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.34em] text-mist">Playable prototype</p>
+                <h3 class="mt-2 text-xl font-semibold text-white sm:text-2xl md:text-3xl">可试玩导演工作台</h3>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <button data-project="rain" class="project-chip interactive active-chip rounded-full border px-3 py-1.5">古风反转短片</button>
+                <button data-project="pulse" class="project-chip interactive rounded-full border border-white/10 px-3 py-1.5 hover:border-gold/25 hover:text-white">城市情绪广告</button>
+                <button data-project="animation" class="project-chip interactive rounded-full border border-white/10 px-3 py-1.5 hover:border-gold/25 hover:text-white">3D 动画短片</button>
+                <span id="heroAspectBadge" class="rounded-full border border-gold/25 px-3 py-1.5 text-gold">抖音 9:16</span>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1.24fr)_360px]">
+              <div class="overflow-hidden rounded-[28px] border border-white/8 bg-ink/44">
+                <div class="flex flex-col gap-3 border-b border-white/8 p-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p class="text-[11px] uppercase tracking-[0.28em] text-mist">项目总览</p>
+                    <h4 id="heroProjectTitle" class="mt-2 text-xl font-semibold text-white">古风反转短视频 · 雨夜真相</h4>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span id="heroAudienceBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/70">女性受众 25-34</span>
+                    <span id="heroStyleBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/70">情绪反转</span>
+                  </div>
+                </div>
+                <div class="grid gap-4 p-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.82fr)]">
+                  <div class="space-y-4">
+                    <div class="overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/60">
+                      <img id="heroMainImage" src="./assets/hero-kv-new.png" alt="导演台主视觉" class="h-[240px] w-full object-cover md:h-[300px] 2xl:h-[340px]">
+                    </div>
+                    <div class="grid gap-2 sm:grid-cols-4">
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-3 md:p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">段落</p>
+                        <p id="metricSegments" class="mt-1 text-2xl font-semibold text-white">04</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-3 md:p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">角色</p>
+                        <p id="metricCharacters" class="mt-1 text-2xl font-semibold text-white">06</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-3 md:p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">场景</p>
+                        <p id="metricScenes" class="mt-1 text-2xl font-semibold text-white">09</p>
+                      </div>
+                      <div class="metric-shimmer rounded-2xl border border-white/8 bg-panelSoft/70 p-3 md:p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">状态</p>
+                        <p id="metricStatus" class="mt-1 text-2xl font-semibold text-white">Ready</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="space-y-4">
+                    <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-4">
+                      <div class="flex items-center justify-between gap-4">
+                        <p id="heroPromptTitle" class="text-base font-semibold text-white">P03 适合故事板增强</p>
+                        <span class="pulse-dot h-3 w-3 rounded-full bg-gold"></span>
+                      </div>
+                      <p id="heroPromptText" class="mt-2 text-sm leading-7 text-smoke/72">推门、停顿、抬眼、真相冲击细节动作需要更精细的镜头控制。</p>
+                    </div>
+                    <div class="rounded-[24px] border border-white/8 bg-panelSoft/66 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-base font-semibold text-white">交付清单</p>
+                        <button id="openDeliverablesButton" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke hover:border-gold/25 hover:text-white">展开</button>
+                      </div>
+                      <div id="heroDeliverables" class="mt-3 space-y-2 text-sm text-smoke/72"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-1">
+                <div class="rounded-[26px] border border-white/8 bg-ink/46 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-base font-semibold text-white">创作流程</p>
+                    <span class="rounded-full border border-gold/25 px-3 py-1 text-xs text-gold">进行中</span>
+                  </div>
+                  <div id="heroStageList" class="mt-3 space-y-2"></div>
+                </div>
+                <div class="rounded-[26px] border border-white/8 bg-ink/46 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-base font-semibold text-white">快捷入口</p>
+                    <span class="rounded-full border border-white/10 px-2.5 py-1 text-xs text-mist">全部可点</span>
+                  </div>
+                  <div class="mt-3 grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
+                    <button id="quickOpenDrawer" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-left text-sm hover:border-gold/25 hover:text-white">查看角色详情抽屉</button>
+                    <button id="quickToggleMode" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-left text-sm hover:border-gold/25 hover:text-white">切换故事板模式</button>
+                    <button id="quickSwitchSegment" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-left text-sm hover:border-gold/25 hover:text-white">切到下一段剧情</button>
+                    <button id="quickOpenExport" class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-left text-sm hover:border-gold/25 hover:text-white">模拟导出弹窗</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">How it works</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">六个步骤，从想法走到可直接生成的成片方案。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">底层是完整的 AI 制片管线——编剧拆剧本、导演讲戏、服化道定资产、音乐定氛围、分镜师写提示词——前台只保留创作者真正关心的内容。</p>
+      </div>
+      <div class="mt-8 overflow-hidden rounded-[34px] border border-white/6 bg-panel/82 shadow-panel panel-frame">
+        <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/18"></div>
+        <div class="relative p-4 md:p-6">
+          <div class="overflow-hidden rounded-[24px] border border-white/8 mb-6">
+            <img src="./assets/workflow-illustration.png" alt="6步创作流程" class="h-[200px] w-full object-cover md:h-[280px] xl:h-[340px]">
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div class="rounded-[24px] border border-white/8 bg-ink/44 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 01</span>
+              <p class="mt-3 text-lg font-semibold text-white">导入灵感或剧本</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/68">一句选题、完整剧本或风格参考图都能启动项目——AI 编剧自动判断从哪个入口开始。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-ink/44 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 02</span>
+              <p class="mt-3 text-lg font-semibold text-white">锁定平台与审美</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/68">选定目标平台、受众画像、风格基准和视频画幅，让后续产出有统一的方向标准。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-ink/44 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 03</span>
+              <p class="mt-3 text-lg font-semibold text-white">拆成视频段落</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/68">AI 导演自动拆剧情结构、识别角色与场景需求，标出哪些段落值得单独做故事板增强。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-ink/44 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 04</span>
+              <p class="mt-3 text-lg font-semibold text-white">生成资产设定板</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/68">先把角色、服化道、场景氛围、关键道具变成稳定可复用的视觉资产，再进入镜头阶段。</p>
+            </div>
+            <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 05 · 核心</span>
+              <p class="mt-3 text-lg font-semibold text-white">关键段落故事板增强</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/72">复杂走位、微表情、转场冲击不再靠运气抽卡——用分镜预演把镜头节奏拉稳。</p>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-ink/44 p-5">
+              <span class="text-[10px] uppercase tracking-[0.3em] text-gold">Step 06</span>
+              <p class="mt-3 text-lg font-semibold text-white">导出完整交付清单</p>
+              <p class="mt-2 text-sm leading-7 text-smoke/68">一键拿到所有角色图、场景图、视频提示词、故事板增强图和音乐建议，适配主流工具。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="workspace" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Core workspace</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">它可以被真实地试玩——段落切换、模式开关、抽屉、导出一个不少。</h3>
+        </div>
+        <p class="max-w-xl text-base leading-7 text-smoke/70">这页不支持真实后端，但每一个按钮、面板和弹窗都模拟了完整交互路径，就像在操作一个真实产品。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 2xl:grid-cols-[minmax(0,1.42fr)_390px]">
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/86 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/22"></div>
+          <div class="relative p-4 md:p-5 xl:p-6">
+            <div class="flex flex-col gap-4 border-b border-white/8 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">导演工作台</p>
+                <h4 id="workspaceProjectTitle" class="mt-2 text-2xl font-semibold text-white">古风反转短视频 · 雨夜真相</h4>
+                <p id="workspaceProjectBrief" class="mt-1 max-w-3xl text-sm leading-7 text-smoke/68"></p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="modeToggle" class="interactive active-chip rounded-full border px-4 py-2 text-sm">故事板增强：开</button>
+                <button id="aspectToggle" class="interactive rounded-full border border-white/10 px-4 py-2 text-sm text-smoke hover:border-gold/30 hover:text-white"></button>
+                <button id="startReviewButton" class="interactive rounded-full border border-white/10 px-4 py-2 text-sm text-smoke hover:border-gold/30 hover:text-white">评审摘要</button>
+              </div>
+            </div>
+
+            <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)]">
+              <div class="space-y-4">
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p class="text-[11px] uppercase tracking-[0.28em] text-mist">段落时间线</p>
+                      <p class="mt-2 text-lg font-semibold text-white">点击任一段落 · 右侧内容联动切换</p>
+                    </div>
+                    <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-mist">普通模式 / 故事板增强 · 双态</span>
+                  </div>
+                  <div id="segmentTimeline" class="timeline-track mt-4 flex gap-3 overflow-x-auto pb-2"></div>
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1.24fr)_320px]">
+                  <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                    <div class="flex flex-col gap-3 border-b border-white/8 pb-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">当前段落画布</p>
+                        <h5 id="segmentTitle" class="mt-2 text-xl font-semibold text-white">P03 · 推门见真相</h5>
+                      </div>
+                      <div class="flex flex-wrap gap-2 text-xs">
+                        <span id="segmentDurationBadge" class="rounded-full border border-gold/25 px-3 py-1.5 text-gold">8.5s</span>
+                        <span id="segmentStatusBadge" class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/70">重点段落</span>
+                      </div>
+                    </div>
+                    <div class="mt-4 overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/70">
+                      <img id="segmentImage" src="./assets/storyboard-triptych-new.png" alt="段落预览" class="h-[250px] w-full object-cover md:h-[360px] xl:h-[420px]">
+                    </div>
+                    <div class="mt-4 grid gap-3 xl:grid-cols-3">
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">叙事目标</p>
+                        <p id="segmentGoal" class="mt-3 text-sm leading-7 text-smoke/74"></p>
+                      </div>
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">角色 / 场景</p>
+                        <p id="segmentAssetsSummary" class="mt-3 text-sm leading-7 text-smoke/74"></p>
+                      </div>
+                      <div class="rounded-2xl border border-white/8 bg-panelSoft/60 p-4">
+                        <p class="text-[11px] uppercase tracking-[0.28em] text-mist">建议</p>
+                        <p id="segmentAdvice" class="mt-3 text-sm leading-7 text-smoke/74"></p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-base font-semibold text-white">资产速览</p>
+                        <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">抽屉联动</span>
+                      </div>
+                      <div id="assetCards" class="mt-3 grid gap-3"></div>
+                    </div>
+                    <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-base font-semibold text-white">输出动作</p>
+                        <span class="rounded-full border border-gold/25 px-2.5 py-1 text-xs text-gold">可点</span>
+                      </div>
+                      <div class="mt-3 space-y-2">
+                        <button data-export="storyboard" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-gold/24 bg-gold/10 px-4 py-3 text-left text-sm text-white hover:bg-gold/14">
+                          <span>导出故事板图包</span><i class="fa fa-arrow-right text-gold"></i>
+                        </button>
+                        <button data-export="prompt" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出视频提示词</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                        <button data-export="assets" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出角色与场景资产</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                        <button data-export="bundle" class="export-action interactive flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm text-smoke hover:border-gold/24 hover:text-white">
+                          <span>导出完整交付包</span><i class="fa fa-arrow-right text-mist"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="space-y-4">
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <p class="text-base font-semibold text-white">当前逻辑摘要</p>
+                  <div id="workspaceSummary" class="mt-3 space-y-2.5 text-sm text-smoke/72"></div>
+                </div>
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-base font-semibold text-white">活动流</p>
+                    <button id="shuffleActivityButton" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke hover:border-gold/25 hover:text-white">刷新</button>
+                  </div>
+                  <div id="activityList" class="mt-3 space-y-3"></div>
+                </div>
+                <div class="rounded-[28px] border border-white/8 bg-ink/44 p-4">
+                  <p class="text-base font-semibold text-white">演示话术</p>
+                  <ul class="mt-3 space-y-2.5 text-sm leading-7 text-smoke/72">
+                    <li>· 先切案例，证明这是多项目平台而非单页截图。</li>
+                    <li>· 再切段落和故事板开关，让别人立刻看到"增强"的效果。</li>
+                    <li>· 最后点开角色抽屉和导出弹窗，让人感觉产品骨架已经成型。</li>
+                  </ul>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="float-card relative rounded-[30px] border border-white/6 bg-panel/78 p-5 shadow-soft panel-frame">
+            <p class="text-[11px] uppercase tracking-[0.32em] text-mist">核心技术差异</p>
+            <h4 class="mt-3 text-2xl font-semibold text-white">不只是一套提示词魔板。</h4>
+            <div class="mt-4 space-y-3 text-sm leading-7 text-smoke/70">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <p class="font-semibold text-white">五智能体协作管线</p>
+                <p class="mt-1 text-smoke/65">编剧 → 导演 → 服化道 → 音乐总监 → 分镜师，每个角色各司其职，产出可直接串接。</p>
+              </div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <p class="font-semibold text-white">内容驱动反推</p>
+                <p class="mt-1 text-smoke/65">不再用固定模板锁死时长和镜头数，Cut 数量由叙事单位数决定、总时长由内容自然延展。</p>
+              </div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <p class="font-semibold text-white">资产优先于镜头</p>
+                <p class="mt-1 text-smoke/65">先建角色、场景、道具的可复用资产，再进入生成阶段——整条视频统一世界观。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="float-card relative overflow-hidden rounded-[30px] border border-white/6 bg-panel/78 p-5 shadow-soft panel-frame">
+            <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/16"></div>
+            <div class="relative">
+              <p class="text-[11px] uppercase tracking-[0.32em] text-mist">10 种画幅 · 7 大平台规律</p>
+              <h4 class="mt-3 text-2xl font-semibold text-white">从 9:16 抖音竖屏到 21:9 超宽院线。</h4>
+              <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full border border-gold/25 bg-gold/10 px-3 py-1.5 text-gold">1:1</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">3:4</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">4:3</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">9:16</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">16:9</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">21:9</span>
+                <span class="rounded-full border border-white/10 px-3 py-1.5 text-smoke/68">...</span>
+              </div>
+              <p class="mt-4 text-sm leading-7 text-smoke/72">内置抖音 / 快手 / 小红书 / 视频号 / B站 / YouTube / TikTok 平台习惯对照，受众画像和留存节奏统一考虑。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="comparison" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">The differentiator</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">故事板增强，是拉开差距的关键一步。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">大多数 AI 视频工具只提供单段提示词生成。只有我们对"复杂段落"提供专门的故事板预演机制。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 xl:grid-cols-2">
+        <div class="relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/82 shadow-panel panel-frame p-5 md:p-6">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/18"></div>
+          <div class="relative">
+            <div class="overflow-hidden rounded-[24px] border border-white/8">
+              <img src="./assets/comparison-dashboard.png" alt="模式对比" class="h-[240px] w-full object-cover md:h-[340px] xl:h-[400px]">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid gap-5">
+          <div class="relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/80 shadow-panel panel-frame p-5 md:p-6">
+            <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-transparent"></div>
+            <div class="relative grid gap-5 md:grid-cols-2">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">默认模式</p>
+                <h4 class="mt-2 text-2xl font-semibold text-white">单镜模式</h4>
+                <p class="mt-3 text-sm leading-7 text-smoke/72">适用于 80% 的叙事段落。一个段落一段完整叙事，多张角色/场景/道具参考图拼接，直接产出可用的视频提示词。轻量、高效、够用。</p>
+                <ul class="mt-4 space-y-2 text-sm text-smoke/68">
+                  <li>· 一段连贯画面走一个叙事单位</li>
+                  <li>· 多图参考角色/场景/道具</li>
+                  <li>· 适合交代、递进、收束类段落</li>
+                </ul>
+              </div>
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-gold">按需开启</p>
+                <h4 class="mt-2 text-2xl font-semibold text-gold">故事板增强</h4>
+                <p class="mt-3 text-sm leading-7 text-smoke/72">专门服务复杂段落：推门、走位、微表情、眼神、情绪冲击——不是靠抽卡，而是先画分镜再写提示词。</p>
+                <ul class="mt-4 space-y-2 text-sm text-smoke/68">
+                  <li>· 8 模块分镜大图 · 角色双重锁定</li>
+                  <li>· 每 Cut 精确到镜头/焦距/景别/运动</li>
+                  <li>· 减少复杂段落抽卡次数</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/80 shadow-panel panel-frame p-5 md:p-6">
+            <div class="absolute inset-0 bg-gradient-to-br from-slateBlue/18 via-transparent to-transparent"></div>
+            <div class="relative">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">何时该开启故事板</p>
+              <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">
+                  <i class="fa fa-hand-peace-o text-xl text-gold mb-2"></i>
+                  <p class="font-semibold text-white">精细动作控制</p>
+                  <p class="mt-1">开门方式、手部细节、走位路径需要预演固定的镜头。</p>
+                </div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">
+                  <i class="fa fa-eye text-xl text-gold mb-2"></i>
+                  <p class="font-semibold text-white">微表情连续</p>
+                  <p class="mt-1">从平静到震惊到愤怒，连续 3 种情绪不能跳脱角色一致性。</p>
+                </div>
+                <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">
+                  <i class="fa fa-bolt text-xl text-gold mb-2"></i>
+                  <p class="font-semibold text-white">情绪转折冲击</p>
+                  <p class="mt-1">从悬念到真相揭晓的瞬间，节奏崩了整个段落就废了。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="assets-board" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Asset boards</p>
+          <h3 class="mt-3 text-3xl font-semibold text-white md:text-4xl">把角色和场景先做成资产——整条视频才会有世界观。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">点击详情按钮打开抽屉，查看角色服化道、场景气氛参考和故事板预演内容。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 xl:grid-cols-2">
+        <article class="float-card relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/82 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-transparent"></div>
+          <div class="relative p-5 md:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Character board</p>
+                <h4 class="mt-2 text-2xl font-semibold text-white">角色设定板 / 服化道板</h4>
+              </div>
+              <button data-drawer-type="character" class="open-drawer interactive rounded-full border border-gold/25 px-4 py-2 text-sm text-gold hover:bg-gold/10">查看角色细节</button>
+            </div>
+            <div class="mt-5 overflow-hidden rounded-[24px] border border-white/8">
+              <img src="./assets/character-board-new.png" alt="角色设定板" class="h-[260px] w-full object-cover md:h-[400px] xl:h-[460px]">
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-4">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">角色外观锁定</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">服装材质统一</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">多段落稳定复用</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">跨集一致性</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="float-card relative overflow-hidden rounded-[32px] border border-white/6 bg-panel/82 shadow-panel panel-frame">
+          <div class="absolute inset-0 bg-gradient-to-br from-slateBlue/18 via-transparent to-transparent"></div>
+          <div class="relative p-5 md:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Scene board</p>
+                <h4 class="mt-2 text-2xl font-semibold text-white">场景气氛板 / 光影材质板</h4>
+              </div>
+              <button data-drawer-type="scene" class="open-drawer interactive rounded-full border border-gold/25 px-4 py-2 text-sm text-gold hover:bg-gold/10">查看场景细节</button>
+            </div>
+            <div class="mt-5 overflow-hidden rounded-[24px] border border-white/8">
+              <img src="./assets/scene-board-new.png" alt="场景气氛板" class="h-[260px] w-full object-cover md:h-[400px] xl:h-[460px]">
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-4">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">空间氛围锁定</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">光影色调统一</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">镜头情绪可信</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-sm text-smoke/72">道具关系清晰</div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="deliverables" class="shell py-12 md:py-16">
+      <div class="relative overflow-hidden rounded-[36px] border border-white/6 bg-panel/84 shadow-panel panel-frame">
+        <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-slateBlue/22"></div>
+        <div class="relative p-6 md:p-8 xl:p-10">
+          <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Deliverables</p>
+              <h3 class="mt-3 max-w-5xl text-3xl font-semibold text-white md:text-4xl">最终交到你手上的，是一整套拿来就能开干的成片方案。</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="exportLarge" class="interactive rounded-full bg-gold px-5 py-3 font-semibold text-ink hover:bg-[#d7b27c]">导出完整项目</button>
+              <button id="openChecklistButton" class="interactive rounded-full border border-white/10 px-5 py-3 text-sm text-smoke hover:border-gold/25 hover:text-white">查看交付清单</button>
+            </div>
+          </div>
+
+          <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">01</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">视频提示词</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">段落化 Seedance / 可灵 / Runway 通用提示词，逐段生成逐段串接。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">02</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">故事板增强图</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">8 模块分镜大图，专为复杂段落减少 AI 抽卡成本。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">03</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">角色资产包</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">角色设定 PNG + 提示词，保证段落/跨集人物不跑偏。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">04</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">场景资产包</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">气氛板 PNG + 提示词，空间、光影、材质、情绪统一。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">05</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">音乐方向建议</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">原创 + 市面推荐双轨方案，方便 Suno 生成和音乐平台搜索。</p>
+            </div>
+            <div class="float-card rounded-[24px] border border-white/8 bg-ink/40 p-5">
+              <p class="text-[11px] uppercase tracking-[0.3em] text-mist">06</p>
+              <h4 class="mt-3 text-xl font-semibold text-white">剪辑清单</h4>
+              <p class="mt-3 text-sm leading-7 text-smoke/68">每段时长、衔接建议、音乐编号对应——直接当剪辑台本用。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Pricing preview</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">先试再买——这套方案的设计从一开始就为"能用+能收费"做了预留。</h3>
+        </div>
+        <p class="max-w-2xl text-base leading-7 text-smoke/70">以下为产品方案预览，不代表当前已上线，但骨架和逻辑已就位。</p>
+      </div>
+
+      <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div class="relative overflow-hidden rounded-[32px] border border-white/8 bg-panel/80 shadow-panel panel-frame p-6">
+          <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent"></div>
+          <div class="relative">
+            <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">试用版</span>
+            <p class="mt-4 text-4xl font-semibold text-white">免费</p>
+            <p class="mt-2 text-sm leading-7 text-smoke/68">快速体验完整流程，不需要绑定支付方式。</p>
+            <div class="mt-5 h-px bg-white/8"></div>
+            <ul class="mt-5 space-y-3 text-sm leading-7 text-smoke/72">
+              <li><i class="fa fa-check text-gold mr-2"></i>3 次完整项目创建</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>基础角色 / 场景生成</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>1 段故事板增强试用</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>标准导出格式</li>
+            </ul>
+            <button class="interactive mt-6 w-full rounded-2xl border border-gold/25 bg-gold/10 px-4 py-3 text-sm text-gold hover:bg-gold/14">免费开始</button>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[32px] border border-gold/24 bg-panel/84 shadow-glow panel-frame p-6">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/10 via-transparent to-transparent"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between gap-3">
+              <span class="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-xs text-gold">推荐</span>
+              <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">月付 / 年付</span>
+            </div>
+            <p class="mt-4 text-4xl font-semibold text-white">¥68<span class="text-base text-mist">/月</span></p>
+            <p class="mt-2 text-sm leading-7 text-smoke/68">独立创作者的最佳选择，完整功能覆盖日常创作。</p>
+            <div class="mt-5 h-px bg-white/8"></div>
+            <ul class="mt-5 space-y-3 text-sm leading-7 text-smoke/72">
+              <li><i class="fa fa-check text-gold mr-2"></i>每月 30 个项目</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>完整角色/场景/道具体系</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>不限故事板增强段落</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>全格式导出 + 跨集复用</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>项目历史与版本管理</li>
+            </ul>
+            <button class="interactive mt-6 w-full rounded-2xl bg-gold px-4 py-3 font-semibold text-ink hover:bg-[#d7b27c]">开始订阅</button>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[32px] border border-white/8 bg-panel/80 shadow-panel panel-frame p-6 md:col-span-2 xl:col-span-1">
+          <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent"></div>
+          <div class="relative">
+            <span class="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">团队版</span>
+            <p class="mt-4 text-4xl font-semibold text-white">¥188<span class="text-base text-mist">/月</span></p>
+            <p class="mt-2 text-sm leading-7 text-smoke/68">小团队、工作室和批量创作者的高阶方案。</p>
+            <div class="mt-5 h-px bg-white/8"></div>
+            <ul class="mt-5 space-y-3 text-sm leading-7 text-smoke/72">
+              <li><i class="fa fa-check text-gold mr-2"></i>不限项目数量</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>团队协作与项目管理</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>优先 AI 推理队列</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>专属故事板风格定制</li>
+              <li><i class="fa fa-check text-gold mr-2"></i>品牌专属模板 + API 接入</li>
+            </ul>
+            <button class="interactive mt-6 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-smoke hover:border-gold/25 hover:text-white">联系团队销售</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" class="shell py-12 md:py-16">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.35em] text-mist">FAQ</p>
+          <h3 class="mt-3 max-w-4xl text-3xl font-semibold text-white md:text-4xl">你可能最先问的几个问题，预答在这里。</h3>
+        </div>
+      </div>
+
+      <div class="mt-8 grid gap-4 md:grid-cols-2">
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">这和直接去 Seedance / 可灵写提示词有什么区别？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            直接写提示词缺少前期规划，容易出现角色前后不一致、场景风格跳脱、关键动作抽卡率极高。这个方案前置了编剧拆解、导演构图、服化道定资产和音乐定氛围四个环节，到写提示词时已经把所有不确定项锁死了——提示词写得准、后续返工少。
+          </div>
+        </div>
+
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">故事板增强只对复杂段落开，会不会其他段落就随便写写？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            不会。单镜模式同样写出完整视频提示词，只是不走全量分镜网格。对于简单的交代、递进和收束段落，单镜已足够。只有在你觉得某个段落抽卡率太高、或者想要精确控制推门/走位/眼神/停顿时才打开——把力气花在真正需要细节的地方。
+          </div>
+        </div>
+
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">我做的视频要发抖音 / B站 / YouTube，能自动适配吗？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            在"锁定平台与审美"这一步会明确选定画幅、节奏偏好和平台规律。内置 10 种画幅和 7 大平台对照，9:16 竖屏不会变成 16:9 横版，整个流水线会自动把画幅传染的坑堵上。
+          </div>
+        </div>
+
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">生成图片和视频是用我自己的工具吗？你们包不包 AI 调用？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            当前版本产出的是可直接使用的提示词资产，不包含 AI 调用。你拿着提示词去 Image2 / Nano Banana / Seedance / 可灵 / Suno 等工具自己生成，灵活性最大，也方便你根据预算控制调用成本。后续收费版本考虑集成 AI 生成。
+          </div>
+        </div>
+
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">多集短剧怎么处理？每集都要重新启动一遍吗？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            续集会自动判断哪些人物/场景/音乐可复用，只为新角色和新场景出设定，不重复设计。跨集角色一致性靠资产复用 + 变体记录锁定，不会出现第二集女主换人。
+          </div>
+        </div>
+
+        <div class="faq-item rounded-[28px] border border-white/8 bg-panel/80 p-5">
+          <button class="faq-toggle flex w-full items-center justify-between gap-4 text-left">
+            <span class="text-lg font-semibold text-white">未来如果要真正的后端和支付，需要多久？</span>
+            <i class="fa fa-chevron-down text-mist transition duration-300"></i>
+          </button>
+          <div class="faq-body mt-4 hidden text-sm leading-7 text-smoke/72">
+            前端和交互原型已经就位，接入 Next.js + Supabase + Stripe/微信支付 + AI 接口，从原型到可用 MVP 大约 2-4 周。如果步子更稳，可以先做试用版（注册 + 提交需求 + AI 返回结果），再加支付。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell pb-16 pt-4 md:pb-24">
+      <div class="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_420px]">
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/82 shadow-panel panel-frame p-6 md:p-8">
+          <div class="absolute inset-0 bg-gradient-to-br from-gold/8 via-transparent to-transparent"></div>
+          <div class="relative">
+            <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Positioning statement</p>
+            <h3 class="mt-3 max-w-5xl text-3xl font-semibold text-white md:text-4xl">给想把视频做出作品感的人，一个真正站在导演视角上的 AI 创作界面。</h3>
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">不是堆 AI 功能，而是把复杂流程翻译成用户能理解的创作界面。</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">故事板增强是可感知的高阶能力，适合作为付费升级点。</div>
+              <div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72">输出的是完整项目包，天然适合团队协作与商业交付。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-[34px] border border-white/6 bg-panel/82 shadow-panel panel-frame p-6 md:p-8">
+          <div class="absolute inset-0 bg-gradient-to-br from-slateBlue/18 via-transparent to-transparent"></div>
+          <div class="relative">
+            <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Next steps</p>
+            <h3 class="mt-3 text-3xl font-semibold text-white">从原型到产品的下一步</h3>
+            <ol class="mt-5 space-y-4 text-sm leading-7 text-smoke/72">
+              <li><span class="text-gold">01.</span> 收集早期用户对交互和流程的反馈。</li>
+              <li><span class="text-gold">02.</span> 接入真实 AI 管线——注册、提交需求、返回结果。</li>
+              <li><span class="text-gold">03.</span> 加支付订阅——先做按次和月付两种。</li>
+              <li><span class="text-gold">04.</span> 正式部署到云平台，配上域名和合规页。</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="shell border-t border-white/8 py-10 md:py-12">
+      <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div class="max-w-md">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-gold/35 bg-panel shadow-glow">
+              <i class="fa fa-play-circle text-lg text-gold"></i>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase tracking-[0.35em] text-mist">Cinematic pre-production system</p>
+              <p class="text-base font-semibold tracking-[0.18em] text-white">AI视频导演台</p>
+            </div>
+          </div>
+          <p class="mt-4 text-sm leading-7 text-smoke/65">让专业影视前期制作流程，变成每个创作者都能上手的智能体协作界面。</p>
+        </div>
+        <div class="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">产品</p>
+            <ul class="mt-3 space-y-2 text-smoke/65">
+              <li><a href="#workflow" class="interactive hover:text-white">工作流</a></li>
+              <li><a href="#workspace" class="interactive hover:text-white">导演台</a></li>
+              <li><a href="#comparison" class="interactive hover:text-white">模式对比</a></li>
+              <li><a href="#pricing" class="interactive hover:text-white">方案</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">资源</p>
+            <ul class="mt-3 space-y-2 text-smoke/65">
+              <li><a href="#assets-board" class="interactive hover:text-white">资产设定</a></li>
+              <li><a href="#deliverables" class="interactive hover:text-white">交付中心</a></li>
+              <li><a href="#faq" class="interactive hover:text-white">FAQ</a></li>
+            </ul>
+          </div>
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">联系</p>
+            <ul class="mt-3 space-y-2 text-smoke/65">
+              <li><a href="#" id="contactDemo" class="interactive hover:text-white">预约演示</a></li>
+              <li><a href="#" id="contactFeedback" class="interactive hover:text-white">提交反馈</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 flex flex-col gap-4 border-t border-white/8 pt-6 md:flex-row md:items-center md:justify-between">
+        <p class="text-xs text-smoke/45">本页面为高保真可试玩网页原型。除真实业务逻辑外，所有交互均已实现。</p>
+        <p class="text-xs text-smoke/45">2026 · AI视频导演台</p>
+      </div>
+    </footer>
+  </main>
+
+  <div id="drawerBackdrop" class="pointer-events-none fixed inset-0 z-50 bg-black/55 opacity-0 transition duration-300"></div>
+  <aside id="assetDrawer" class="pointer-events-none fixed right-0 top-0 z-50 h-full w-full max-w-[460px] translate-x-full border-l border-white/10 bg-ink/96 shadow-panel transition duration-300 md:max-w-[500px]">
+    <div class="flex h-full flex-col">
+      <div class="flex items-start justify-between gap-4 border-b border-white/8 p-5">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Asset detail</p>
+          <h3 id="drawerTitle" class="mt-2 text-2xl font-semibold text-white">角色细节</h3>
+          <p id="drawerSubtitle" class="mt-1 text-sm text-smoke/68"></p>
+        </div>
+        <button id="closeDrawerButton" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-smoke hover:border-gold/25 hover:text-white">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-5">
+        <div class="overflow-hidden rounded-[24px] border border-white/8 bg-panelSoft/70">
+          <img id="drawerImage" src="./assets/character-board-new.png" alt="预览" class="h-[200px] w-full object-cover">
+        </div>
+        <div id="drawerMeta" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
+        <div class="mt-4 rounded-[24px] border border-white/8 bg-panelSoft/60 p-5">
+          <p class="text-[11px] uppercase tracking-[0.28em] text-mist">说明</p>
+          <p id="drawerDescription" class="mt-3 text-sm leading-7 text-smoke/74"></p>
+        </div>
+        <div class="mt-4 rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+          <p class="text-[11px] uppercase tracking-[0.28em] text-gold">细节标签</p>
+          <div id="drawerTags" class="mt-3 flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="modalRoot" class="pointer-events-none fixed inset-0 z-[60] opacity-0 transition duration-300">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/60"></div>
+    <div class="absolute inset-0 flex items-end justify-center p-3 md:items-center md:p-6">
+      <div id="modalPanel" class="modal-enter relative w-full max-w-[800px] rounded-[30px] border border-white/10 bg-ink/96 shadow-panel transition duration-300">
+        <div class="flex items-start justify-between gap-4 border-b border-white/8 p-5">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">Action center</p>
+            <h3 id="modalTitle" class="mt-2 text-2xl font-semibold text-white">导出项目</h3>
+            <p id="modalSubtitle" class="mt-1 text-sm text-smoke/68"></p>
+          </div>
+          <button id="closeModalButton" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-smoke hover:border-gold/25 hover:text-white">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-5"><div id="modalContent"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const PROJECT_KEYS = ['rain', 'pulse', 'animation'];
+      const DRAWER_TYPES = ['character', 'scene', 'storyboard'];
+      const EXPORT_TYPES = ['storyboard', 'prompt', 'assets', 'bundle'];
+      const STAGE_STATUS = ['done', 'active', 'next'];
+      const EXPORT_PROGRESS = { storyboard: 92, prompt: 76, assets: 67, bundle: 84 };
+      const DEFAULT_SEGMENT_INDEX = 2;
+      const TOAST_LIFETIME_MS = 3200;
+
+      const $ = (id) => document.getElementById(id);
+
+      let state = { currentProject: 'rain', currentSegmentIndex: DEFAULT_SEGMENT_INDEX, storyboardEnhanced: true, currentAspectIndex: 0, activityOffset: 0 };
+      const projects = {
+        rain: {
+          key: 'rain', title: '古风反转短视频 · 雨夜真相', audience: '女性受众 25-34', style: '情绪反转',
+          aspectOptions: ['9:16', '16:9', '1:1'], aspectLabel: '抖音 9:16',
+          brief: '前三秒先给悬念，中段用情绪递进压住停留，结尾用眼神反转做评论区发酵点。',
+          heroImage: './assets/hero-kv-new.png',
+          deliverables: ['角色资产 6 份', '场景资产 9 份', '故事板增强 1 段', '视频提示词 4 段', '音乐建议 2 条', '剪辑清单 1 份'],
+          metrics: { segments: '04', characters: '06', scenes: '09', status: 'Ready' },
+          promptTitle: 'P03 适合故事板增强', promptText: '推门、停顿、抬眼、真相冲击细节动作需要更精细的镜头控制。',
+          stages: [{ name: '导入项目', status: 'done' }, { name: '平台与受众', status: 'done' }, { name: '角色设定板', status: 'done' }, { name: '场景气氛板', status: 'done' }, { name: '导演工作台', status: 'active' }, { name: '导出交付', status: 'next' }],
+          summary: ['当前项目目标是做成能引发评论区讨论的短剧式反转视频。', '系统建议只把第三段升级为故事板增强，避免全片过度复杂。', '导出后可直接进入 Seedance / 可灵 / Runway 和后期剪辑。'],
+          activity: ['P03 已切换为故事板增强，镜头节奏锁定完成。', '角色服化道已同步到全部段落，人物一致性状态稳定。', '雨夜门厅场景色调已锁定为冷蓝灰 + 暗金反光。', '最终交付包等待用户确认导出内容。'],
+          assets: [
+            { type: 'character', title: '女主 A · 冷感脆弱型', subtitle: '深蓝刺绣斗篷 / 眼神收着情绪', description: '主角需要同时呈现脆弱与警惕，服装、轮廓和表情设计都偏克制，避免用太强的戏剧化发散人物气质。', tags: ['主角锁定', '冷雨夜质感', '深蓝刺绣', '克制情绪'], image: './assets/character-board-new.png', meta: ['年龄感 24-28', '音色偏低柔', '材质：湿感丝绒', '配饰：古金币纹理'] },
+            { type: 'scene', title: '旧宅门厅 · 真相空间', subtitle: '反光地面 / 昏暗长廊 / 烛光侧打', description: '全片最重要空间锚点，承担悬念落地与真相揭示两种情绪，地面反光和门厅深处层次必须清晰可感。', tags: ['门厅空间', '地面反光', '冷暖对冲', '情绪顶点'], image: './assets/scene-board-new.png', meta: ['主空间 S03', '材质：旧木与石面', '光源：侧烛光', '雨夜冷反光'] },
+            { type: 'storyboard', title: 'P03 故事板增强', subtitle: '推门 / 停顿 / 抬眼 / 真相冲击', description: '该段落需要精细控制走位与情绪推进，用故事板先把镜头顺序预演好，再让视频提示词压到更准确。', tags: ['关键段落', '精细动作', '镜头预演', '减少抽卡'], image: './assets/storyboard-triptych-new.png', meta: ['4 个镜头步骤', '总时长 8.5s', '重点情绪段', '可导出独立文档'] }
+          ],
+          segments: [
+            { id: 'P01', title: 'P01 · 雨夜背影', duration: '3.5s', status: '开头钩子', goal: '用背影和雨声建立悬念，让观众先停下来。', assetsSummary: '女主 A、雨夜街角、油纸伞、冷色路灯反光。', advice: '普通模式即可，重点保持画面统一和前三秒抓力。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P02', title: 'P02 · 递伞靠近', duration: '5.0s', status: '情绪递进', goal: '用靠近和细小动作，悄悄把关系往前推。', assetsSummary: '女主 A、男主 B、雨夜街角、油纸伞。', advice: '普通模式更轻，保留人物动作自然度。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P03', title: 'P03 · 推门见真相', duration: '8.5s', status: '重点段落', goal: '推门、停顿、抬眼和真相冲击完成情绪顶点。', assetsSummary: '女主 A、男主 B、旧宅门厅、雨夜反光地面、半开的信封。', advice: '建议保留故事板增强，减少走位和眼神细节抽卡次数。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P04', title: 'P04 · 眼神定格', duration: '4.0s', status: '反转收束', goal: '用短促定格把悬念甩给评论区，让结尾有回味。', assetsSummary: '女主 A 特写、冷色眼神光、门厅暗背景。', advice: '保持镜头简短有力，不要过多动作分散情绪。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' }
+          ]
+        },
+        pulse: {
+          key: 'pulse', title: '城市情绪广告 · 夜色回声', audience: '品牌客户 / 年轻白领', style: '高级情绪广告',
+          aspectOptions: ['16:9', '9:16', '21:9'], aspectLabel: '品牌片 16:9',
+          brief: '重点不是剧情反转，而是把都市孤独感做成可被品牌接受的情绪美学，镜头更稳，节奏更呼吸。',
+          heroImage: './assets/hero-kv-new.png',
+          deliverables: ['角色资产 3 份', '场景资产 7 份', '故事板增强 2 段', '视频提示词 5 段', '音乐方向 3 条', '提案摘要 1 份'],
+          metrics: { segments: '05', characters: '03', scenes: '07', status: 'Packed' },
+          promptTitle: '中段节奏建议更慢更沉', promptText: '广告片不靠反转，而靠情绪氛围沉浸，所以镜头推进节奏要更呼吸，停顿空间要更大。',
+          stages: [{ name: '品牌信息', status: 'done' }, { name: '受众情绪画像', status: 'done' }, { name: '角色设定板', status: 'done' }, { name: '场景气氛板', status: 'done' }, { name: '导演工作台', status: 'active' }, { name: '提案导出', status: 'next' }],
+          summary: ['当前项目面向品牌提案，重点是情绪统一与高级感而非剧情爆点。', '故事板增强被用在两段镜头组上，方便控制过渡和镜头呼吸。', '导出结果更适合作为提案包和样片制作说明。'],
+          activity: ['主色板已切到 gunmetal + muted blue，金色只保留点睛。', 'P02 与 P04 启用故事板增强，用于控制镜头过渡。', '品牌露出位置已避开主情绪镜头，减少广告感突兀。', '导出包已包含提案摘要与镜头说明。'],
+          assets: [
+            { type: 'character', title: '都市女主 · 低饱和高级感', subtitle: '驼色风衣 / 冷蓝夜景 / 轻疲惫感', description: '人物需要更像现代高级广告里的真实城市人，而不是戏剧化角色，造型和情绪都偏写意克制。', tags: ['品牌气质', '低饱和', '都市夜景', '轻疲惫感'], image: './assets/character-board-new.png', meta: ['年龄感 28-32', '造型：风衣 + 金属耳饰', '材质：羊毛与皮革', '气质：克制高级'] },
+            { type: 'scene', title: '高层玻璃走廊 · 城市夜景', subtitle: '反射玻璃 / 车流散景 / 冷暖分区', description: '空间承担品牌高级感和城市孤独感双重表达，材质、反射和外部夜景层次需处理得很干净。', tags: ['城市夜景', '玻璃反射', '品牌片氛围', '冷暖分区'], image: './assets/scene-board-new.png', meta: ['主空间 S02', '材质：玻璃与金属', '光源：顶灯 + 车流', '品牌片镜面感'] },
+            { type: 'storyboard', title: 'P04 情绪回望', subtitle: '驻足 / 回望 / 城市散景叠压', description: '该段镜头要把人物与城市关系在很短时间里表达出来，用故事板增强控制停顿和转身节奏。', tags: ['情绪镜头', '回望停顿', '品牌提案', '节奏可控'], image: './assets/storyboard-triptych-new.png', meta: ['3 个镜头步骤', '总时长 7.0s', '品牌提案段', '适合大屏播放'] }
+          ],
+          segments: [
+            { id: 'P01', title: 'P01 · 夜色建立', duration: '4.0s', status: '空间建立', goal: '先让观众沉入都市夜色，再接受情绪进入。', assetsSummary: '城市天桥、车流散景、冷蓝霓虹反射。', advice: '普通模式即可，重点保持空间呼吸感。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P02', title: 'P02 · 电梯镜面', duration: '6.0s', status: '增强段落', goal: '通过镜面反射和人物轻动作建立情绪内心戏。', assetsSummary: '都市女主、电梯镜面、金属材质、低饱和灯光。', advice: '建议开故事板增强，避免镜面与人物关系失控。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P03', title: 'P03 · 走廊慢行', duration: '5.5s', status: '呼吸段', goal: '让人物和空间关系自然展开，不要急着给信息。', assetsSummary: '玻璃走廊、城市灯流、风衣人物。', advice: '普通模式更稳，镜头要慢。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P04', title: 'P04 · 回望情绪点', duration: '7.0s', status: '增强段落', goal: '把驻足、回望和城市散景叠压成一个情绪高潮。', assetsSummary: '都市女主、玻璃幕墙、夜景散景。', advice: '建议保留故事板增强，控制人物停顿和视线。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P05', title: 'P05 · 品牌落点', duration: '3.0s', status: '收尾镜头', goal: '让情绪自然收口，给品牌一个高级而不生硬的落点。', assetsSummary: '局部特写、低亮度品牌元素、冷金光线。', advice: '收尾保持极简，不要做成广告口播感。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' }
+          ]
+        },
+        animation: {
+          key: 'animation', title: '3D 动画短片 · 星尘快递', audience: '全年龄段 / 家庭向', style: '皮克斯质感 3D',
+          aspectOptions: ['16:9', '21:9'], aspectLabel: '院线 16:9',
+          brief: '一个机器人小女孩和一颗落单星星的公路旅程。轻科幻外壳包裹温暖成长内核。',
+          heroImage: './assets/hero-kv-new.png',
+          deliverables: ['角色资产 8 份', '场景资产 12 份', '故事板增强 3 段', '视频提示词 6 段', '音乐主题 1 首', '配音参考 1 份'],
+          metrics: { segments: '06', characters: '08', scenes: '12', status: 'Draft' },
+          promptTitle: '开头与中段两个情绪转折需要故事板',
+          promptText: '机器人与星星的眼神交流、加速度穿越星尘两种镜头，需要预演来锁定情绪节奏。',
+          stages: [{ name: '世界观设定', status: 'done' }, { name: '角色设定板', status: 'done' }, { name: '场景气氛板', status: 'done' }, { name: '导演工作台', status: 'active' }, { name: '音乐设计', status: 'active' }, { name: '导出交付', status: 'next' }],
+          summary: ['本片需要大面积的星尘粒子效果和皮克斯风格材质，所以场景气氛锁定在第一优先。', '3 段关键转折均启用故事板增强，控制角色眼神、转身速度和粒子特效进入时机。', '音乐方向已定，正在与音乐总监确认主旋律走向。'],
+          activity: ['世界观文件已锁定，星尘视觉效果参考板已产出。', 'P01 与 P03 启用故事板增强。', '机器人材质样式已确认：金属紫铜 + 柔光反光。', '音乐主旋律初稿等待用户确认。'],
+          assets: [
+            { type: 'character', title: '小星 · 机器人女孩', subtitle: '紫铜外壳 / 圆形光学眼 / 关节机械', description: '机器人需要既有机器的质感又有少女的表情温度，所以头部面板和眼部光圈是设计重点。', tags: ['主角设计', '金属紫铜', '光学眼', '温暖'], image: './assets/character-board-new.png', meta: ['身高 1.2m', '材质：紫铜+柔光', '眼部：圆形光圈', '性格：好奇/固执'] },
+            { type: 'scene', title: '星尘公路 · 穿越场景', subtitle: '粒子流 / 暗紫星云 / 金色尾迹', description: '星尘公路承担"穿越"与"追光"双重视觉任务，粒子密度和尾迹长度必须可视化预演。', tags: ['星尘粒子', '暗紫星云', '金色尾迹', '核心场景'], image: './assets/scene-board-new.png', meta: ['主空间 S05', '粒子密度：高', '色调：暗紫+金', '尾迹动态预设'] },
+            { type: 'storyboard', title: 'P03 星尘穿越加速', subtitle: '加速 / 转弯 / 金色尾迹拉伸', description: '这段是全片视觉高潮，加速度、尾迹和配合音乐的节奏点需要精确锁定。', tags: ['视觉高潮', '粒子加速', '节奏锁定', '预演关键'], image: './assets/storyboard-triptych-new.png', meta: ['5 个镜头步骤', '总时长 12.0s', '全片视觉顶点', '音乐同步精调'] }
+          ],
+          segments: [
+            { id: 'P01', title: 'P01 · 坠落降临', duration: '5.0s', status: '开场建立', goal: '用一颗星星坠落的视觉奇观拉开故事序幕。', assetsSummary: '暗紫星云、坠落星星、机器人小星。', advice: '建议开启故事板增强控制坠落轨迹和粒子溅射。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P02', title: 'P02 · 第一次相望', duration: '6.0s', status: '情绪建立', goal: '机器人与星星之间的初次对视，建立信任基础。', assetsSummary: '小星特写、星星近景、暗背景。', advice: '建议开故事板增强控制眼神光与镜头推近节奏。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P03', title: 'P03 · 星尘公路加速', duration: '12.0s', status: '视觉高潮', goal: '机器人与星星在星尘公路上的高速穿越。', assetsSummary: '星尘公路、粒子流、机器人小星、金色尾迹。', advice: '强烈建议保留故事板增强，这是全片视觉顶点。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P04', title: 'P04 · 星尘休息站', duration: '7.0s', status: '情绪呼吸', goal: '减速慢下来，机器人与星星在一个休息站短暂停留。', assetsSummary: '休息站空间、暖光、机器人小星。', advice: '普通模式即可，让节奏自然呼吸。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P05', title: 'P05 · 星星告别', duration: '8.0s', status: '情绪高潮', goal: '星星能量接近耗尽，机器人做出一个关键决定。', assetsSummary: '机器人小星、暗星云、告别场景。', advice: '保留故事板增强控制微表情和光效退散。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' },
+            { id: 'P06', title: 'P06 · 新旅程开始', duration: '4.5s', status: '结尾留白', goal: '机器人重新上路，天空多了一颗新的星星。', assetsSummary: '机器人小星、夜空、新星光点。', advice: '短促收束，镜头保持克制，让情绪自己走。', imageNormal: './assets/hero-kv-new.png', imageStoryboard: './assets/storyboard-triptych-new.png' }
+          ]
+        }
+      };
+
+      function getProject() { return projects[state.currentProject]; }
+      function getAspect() { const p = getProject(); return p.aspectOptions[state.currentAspectIndex % p.aspectOptions.length]; }
+      function getSegment() { return getProject().segments[state.currentSegmentIndex]; }
+
+      function switchProject(key) {
+        if (!projects[key]) return;
+        state.currentProject = key;
+        state.currentAspectIndex = 0;
+        state.currentSegmentIndex = 0;
+        state.activityOffset = 0;
+        renderAll();
+        toast(`已切换到：${getProject().title}`);
+      }
+
+      function switchToNextProject() {
+        const keys = Object.keys(projects);
+        const idx = (keys.indexOf(state.currentProject) + 1) % keys.length;
+        switchProject(keys[idx]);
+      }
+
+      function toggleStoryboard() {
+        state.storyboardEnhanced = !state.storyboardEnhanced;
+        renderWorkspace();
+        toast(`故事板增强已${state.storyboardEnhanced ? '开启' : '关闭'}`);
+      }
+
+      function renderHero(p) {
+        p = p || getProject();
+        document.getElementById('heroProjectTitle').textContent = p.title;
+        document.getElementById('heroAudienceBadge').textContent = p.audience;
+        document.getElementById('heroStyleBadge').textContent = p.style;
+        document.getElementById('heroMainImage').src = p.heroImage;
+        document.getElementById('metricSegments').textContent = p.metrics.segments;
+        document.getElementById('metricCharacters').textContent = p.metrics.characters;
+        document.getElementById('metricScenes').textContent = p.metrics.scenes;
+        document.getElementById('metricStatus').textContent = p.metrics.status;
+        document.getElementById('heroPromptTitle').textContent = p.promptTitle;
+        document.getElementById('heroPromptText').textContent = p.promptText;
+        document.getElementById('heroAspectBadge').textContent = p.aspectLabel;
+        document.getElementById('heroDeliverables').innerHTML = p.deliverables.map(item => `<div class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3"><span>${item}</span><i class="fa fa-check text-gold"></i></div>`).join('');
+        document.getElementById('heroStageList').innerHTML = p.stages.map(stage => {
+          const cls = stage.status === 'done' ? 'border-white/8 bg-white/[0.03] text-smoke/76' : stage.status === 'active' ? 'border-gold/28 bg-gold/10 text-white' : 'border-white/8 bg-panelSoft/40 text-mist';
+          const icon = stage.status === 'done' ? '<i class="fa fa-check text-gold"></i>' : stage.status === 'active' ? '<i class="fa fa-circle text-[10px] text-gold"></i>' : '<i class="fa fa-angle-right text-mist"></i>';
+          return `<div class="flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${cls}"><span>${stage.name}</span>${icon}</div>`;
+        }).join('');
+        document.querySelectorAll('.project-chip').forEach(chip => chip.classList.toggle('active-chip', chip.dataset.project === state.currentProject));
+      }
+
+      function renderWorkspace() {
+        const p = getProject();
+        const seg = getSegment();
+        document.getElementById('workspaceProjectTitle').textContent = p.title;
+        document.getElementById('workspaceProjectBrief').textContent = p.brief;
+        document.getElementById('modeToggle').textContent = `故事板增强：${state.storyboardEnhanced ? '开' : '关'}`;
+        document.getElementById('modeToggle').classList.toggle('active-chip', state.storyboardEnhanced);
+        document.getElementById('aspectToggle').textContent = `画幅：${getAspect()}`;
+        document.getElementById('segmentTimeline').innerHTML = p.segments.map((item, idx) => {
+          const active = idx === state.currentSegmentIndex;
+          return `<button data-segment-index="${idx}" class="segment-chip interactive min-w-[240px] shrink-0 rounded-[24px] border p-4 text-left ${active ? 'border-gold/28 bg-gold/10 shadow-glow' : 'border-white/8 bg-white/[0.03]'}">
+            <div class="flex items-center justify-between gap-3"><span class="text-xs uppercase tracking-[0.26em] ${active ? 'text-gold' : 'text-mist'}">${item.id}</span><span class="rounded-full border border-white/10 px-2.5 py-1 text-xs ${active ? 'text-gold' : 'text-smoke/60'}">${item.duration}</span></div>
+            <p class="mt-3 text-lg font-semibold text-white">${item.title.replace(`${item.id} · `, '')}</p>
+            <p class="mt-2 text-sm leading-6 text-smoke/68">${item.goal}</p>
+          </button>`;
+        }).join('');
+        document.getElementById('segmentTitle').textContent = seg.title;
+        document.getElementById('segmentDurationBadge').textContent = seg.duration;
+        document.getElementById('segmentStatusBadge').textContent = seg.status;
+        document.getElementById('segmentGoal').textContent = seg.goal;
+        document.getElementById('segmentAssetsSummary').textContent = seg.assetsSummary;
+        document.getElementById('segmentAdvice').textContent = state.storyboardEnhanced ? seg.advice : '已切到普通模式，当前预览优先展示更直接的生成路径。';
+        document.getElementById('segmentImage').src = state.storyboardEnhanced ? seg.imageStoryboard : seg.imageNormal;
+        document.getElementById('assetCards').innerHTML = p.assets.map(asset => `<button data-drawer-type="${asset.type}" class="open-drawer interactive flex items-start justify-between gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] p-4 text-left hover:border-gold/24 hover:bg-white/[0.04]"><div><p class="text-[11px] uppercase tracking-[0.28em] text-mist">${asset.type}</p><p class="mt-2 text-base font-semibold text-white">${asset.title}</p><p class="mt-1 text-sm text-smoke/68">${asset.subtitle}</p></div><i class="fa fa-angle-right mt-1 text-mist"></i></button>`).join('');
+        document.getElementById('workspaceSummary').innerHTML = p.summary.map(item => `<div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 leading-7">${item}</div>`).join('');
+        const rotated = p.activity.slice(state.activityOffset).concat(p.activity.slice(0, state.activityOffset));
+        document.getElementById('activityList').innerHTML = rotated.map(item => `<div class="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm leading-7 text-smoke/72"><div class="flex items-start gap-3"><span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-gold pulse-dot"></span><span>${item}</span></div></div>`).join('');
+      }
+
+      function renderAll() {
+        const p = getProject();
+        state.currentSegmentIndex = Math.min(state.currentSegmentIndex, p.segments.length - 1);
+        renderHero(p);
+        renderWorkspace();
+      }
+
+      let toastTimer;
+      function toast(text) {
+        const t = document.getElementById('toast');
+        clearTimeout(toastTimer);
+        t.textContent = text;
+        t.className = 'toast-pop fixed bottom-6 right-6 z-[70] rounded-2xl border border-gold/25 bg-ink/94 px-5 py-3 text-sm text-white shadow-glow';
+        toastTimer = setTimeout(() => { t.className = 'pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition'; }, TOAST_LIFETIME_MS);
+      }
+
+      function openDrawer(type) {
+        const data = (projects[state.currentProject].assets.find(a => a.type === type)) || projects[state.currentProject].assets[0];
+        if (!data) return;
+        document.getElementById('drawerTitle').textContent = data.title;
+        document.getElementById('drawerSubtitle').textContent = data.subtitle;
+        document.getElementById('drawerImage').src = data.image;
+        document.getElementById('drawerDescription').textContent = data.description;
+        document.getElementById('drawerMeta').innerHTML = data.meta.map(item => `<div class="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72">${item}</div>`).join('');
+        document.getElementById('drawerTags').innerHTML = data.tags.map(tag => `<span class="rounded-full border border-gold/24 bg-gold/10 px-3 py-1.5 text-xs text-gold">${tag}</span>`).join('');
+        document.getElementById('drawerBackdrop').classList.remove('pointer-events-none', 'opacity-0');
+        document.getElementById('assetDrawer').classList.remove('pointer-events-none', 'translate-x-full');
+        toast(`已打开：${data.title}`);
+      }
+
+      function closeDrawer() {
+        document.getElementById('drawerBackdrop').classList.add('pointer-events-none', 'opacity-0');
+        document.getElementById('assetDrawer').classList.add('pointer-events-none', 'translate-x-full');
+      }
+
+      function openModal(cfg) {
+        document.getElementById('modalTitle').textContent = cfg.title;
+        document.getElementById('modalSubtitle').textContent = cfg.subtitle;
+        document.getElementById('modalContent').innerHTML = cfg.html;
+        document.getElementById('modalRoot').classList.remove('pointer-events-none', 'opacity-0');
+        document.getElementById('modalPanel').classList.remove('modal-enter');
+        toast(cfg.title);
+      }
+
+      function closeModal() {
+        document.getElementById('modalRoot').classList.add('pointer-events-none', 'opacity-0');
+        document.getElementById('modalPanel').classList.add('modal-enter');
+      }
+
+      function buildExportModal(type) {
+        const p = getProject();
+        const seg = getSegment();
+        const map = { storyboard: ['导出故事板图包', `当前优先打包 ${seg.title} 的故事板增强内容。`, EXPORT_PROGRESS.storyboard], prompt: ['导出视频提示词', `导出 ${p.title} 的段落化视频提示词。`, EXPORT_PROGRESS.prompt], assets: ['导出角色与场景资产', `导出 ${p.title} 的角色与场景资产。`, EXPORT_PROGRESS.assets], bundle: ['导出完整项目', `打包 ${p.title} 的全部演示交付物。`, EXPORT_PROGRESS.bundle] };
+        const [title, sub, prog] = map[type] || map.bundle;
+        return {
+          title, subtitle: sub,
+          html: `<div class="space-y-5">
+            <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-5">
+              <div class="flex items-center justify-between gap-4"><p class="text-xl font-semibold text-white">项目资源已就绪</p><span class="rounded-full border border-gold/25 px-3 py-1.5 text-sm text-gold">${prog}%</span></div>
+              <div class="mt-4 h-3 overflow-hidden rounded-full bg-white/8"><div class="h-full rounded-full bg-gradient-to-r from-goldSoft via-gold to-accent" style="width:${prog}%"></div></div>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2">${p.deliverables.map(d => `<div class="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72">${d}</div>`).join('')}</div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <button class="interactive rounded-2xl bg-gold px-4 py-3 font-semibold text-ink hover:bg-[#d7b27c]">下载压缩包</button>
+              <button class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-smoke hover:border-gold/24 hover:text-white">复制分享链接</button>
+              <button class="interactive rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-smoke hover:border-gold/24 hover:text-white">查看交付说明</button>
+            </div>
+          </div>`
+        };
+      }
+
+      function newProjectModal() {
+        return { title: '新建项目向导', subtitle: '这是一个假交互弹层，但已模拟出完整的新建入口。',
+          html: `<div class="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+            <div class="space-y-4">
+              <div><label class="text-[11px] uppercase tracking-[0.28em] text-mist">一句话想法</label><div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">雨夜里的一次推门，让一段关系瞬间翻转。</div></div>
+              <div class="grid gap-4 sm:grid-cols-2"><div><label class="text-[11px] uppercase tracking-[0.28em] text-mist">目标平台</label><div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">抖音 / 小红书 / B站</div></div><div><label class="text-[11px] uppercase tracking-[0.28em] text-mist">画幅</label><div class="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-smoke/68">9:16 / 16:9 / 1:1</div></div></div>
+              <div><label class="text-[11px] uppercase tracking-[0.28em] text-mist">风格基调</label><div class="mt-2 flex flex-wrap gap-2"><span class="rounded-full border border-gold/25 bg-gold/10 px-3 py-1.5 text-xs text-gold">电影感写实</span><span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/68">高级广告感</span><span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-smoke/68">情绪悬疑</span></div></div>
+            </div>
+            <div class="rounded-[24px] border border-white/8 bg-panelSoft/60 p-5">
+              <p class="text-[11px] uppercase tracking-[0.28em] text-mist">接下来会发生什么</p>
+              <ul class="mt-4 space-y-3 text-sm leading-7 text-smoke/72"><li>1. 锁定平台、受众和审美方向。</li><li>2. 拆角色、场景和段落结构。</li><li>3. 复杂段落可单独开启故事板增强。</li><li>4. 导出可直接生成的完整交付包。</li></ul>
+              <button class="interactive mt-5 w-full rounded-2xl bg-gold px-4 py-3 font-semibold text-ink hover:bg-[#d7b27c]">开始创建项目</button>
+            </div>
+          </div>`
+        };
+      }
+
+      function checklistModal() {
+        const p = getProject();
+        return { title: '交付清单', subtitle: '核对本次交付内容。',
+          html: `<div class="space-y-4"><div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm leading-7 text-smoke/72">当前项目：${p.title}。以下内容将随导出一起交付。</div><div class="grid gap-3 md:grid-cols-2">${p.deliverables.map(d => `<label class="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-smoke/72"><input type="checkbox" checked class="h-4 w-4 accent-[#b8945f]"><span>${d}</span></label>`).join('')}</div></div>`
+        };
+      }
+
+      function reviewModal() {
+        const seg = getSegment();
+        return { title: '评审摘要', subtitle: '制片 / 导演关键节点建议。',
+          html: `<div class="grid gap-4 md:grid-cols-3">
+            <div class="rounded-[24px] border border-gold/18 bg-gold/8 p-5"><p class="text-[11px] uppercase tracking-[0.28em] text-gold">保留</p><p class="mt-3 text-sm leading-7 text-smoke/74">${seg.title} 的核心冲击点已明确，悬念和情绪方向成立。</p></div>
+            <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5"><p class="text-[11px] uppercase tracking-[0.28em] text-mist">优化</p><p class="mt-3 text-sm leading-7 text-smoke/74">建议继续压缩无效铺垫，让前 3 秒更快给出钩子。</p></div>
+            <div class="rounded-[24px] border border-white/8 bg-white/[0.03] p-5"><p class="text-[11px] uppercase tracking-[0.28em] text-mist">结论</p><p class="mt-3 text-sm leading-7 text-smoke/74">当前原型已足以让人理解产品定位与关键交互路径。</p></div>
+          </div>`
+        };
+      }
+
+      document.addEventListener('click', (e) => {
+        const pc = e.target.closest('.project-chip');
+        if (pc && pc.dataset.project && projects[pc.dataset.project]) { switchProject(pc.dataset.project); return; }
+        const sc = e.target.closest('.segment-chip');
+        if (sc) { const idx = Number(sc.dataset.segmentIndex); if (!isNaN(idx) && idx !== state.currentSegmentIndex) { state.currentSegmentIndex = idx; renderWorkspace(); } return; }
+        const db = e.target.closest('.open-drawer'); if (db) { openDrawer(db.dataset.drawerType); return; }
+        const ea = e.target.closest('.export-action'); if (ea) { openModal(buildExportModal(ea.dataset.export)); return; }
+        const ft = e.target.closest('.faq-toggle'); if (ft) { const body = ft.nextElementSibling; const icon = ft.querySelector('.fa-chevron-down'); body.classList.toggle('hidden'); icon.style.transform = body.classList.contains('hidden') ? '' : 'rotate(180deg)'; return; }
+      });
+
+      function bind(id, event, handler) { const el = $(id); if (el) el.addEventListener(event, handler); }
+
+      bind('modeToggle', 'click', toggleStoryboard);
+      bind('aspectToggle', 'click', () => { state.currentAspectIndex++; const el = $('aspectToggle'); if (el) el.textContent = `画幅：${getAspect()}`; });
+      bind('shuffleActivityButton', 'click', () => { const p = getProject(); state.activityOffset = (state.activityOffset + 1) % p.activity.length; renderWorkspace(); });
+      bind('openProjectButton', 'click', () => openModal(newProjectModal()));
+      bind('enterWorkspace', 'click', () => { const el = $('workspace'); if (el) el.scrollIntoView({ behavior: 'smooth' }); });
+      bind('openComparisonButton', 'click', () => { const el = $('comparison'); if (el) el.scrollIntoView({ behavior: 'smooth' }); });
+      bind('openDeliverablesButton', 'click', () => openModal(checklistModal()));
+      bind('openChecklistButton', 'click', () => openModal(checklistModal()));
+      bind('startReviewButton', 'click', () => openModal(reviewModal()));
+      bind('projectSwitcherButton', 'click', switchToNextProject);
+      bind('exportProjectButtonTop', 'click', () => openModal(buildExportModal('bundle')));
+      bind('exportLarge', 'click', () => openModal(buildExportModal('bundle')));
+      bind('quickOpenExport', 'click', () => openModal(buildExportModal('bundle')));
+      bind('quickOpenDrawer', 'click', () => openDrawer('character'));
+      bind('quickToggleMode', 'click', toggleStoryboard);
+      bind('quickSwitchSegment', 'click', () => { state.currentSegmentIndex = (state.currentSegmentIndex + 1) % getProject().segments.length; renderWorkspace(); });
+
+      bind('drawerBackdrop', 'click', closeDrawer);
+      bind('closeDrawerButton', 'click', closeDrawer);
+      bind('modalBackdrop', 'click', closeModal);
+      bind('closeModalButton', 'click', closeModal);
+
+      bind('mobileMenuToggle', 'click', () => { const el = $('mobileMenu'); if (el) el.classList.toggle('hidden'); });
+      document.querySelectorAll('.mobile-nav-link').forEach(link => link.addEventListener('click', () => { const el = $('mobileMenu'); if (el) el.classList.add('hidden'); }));
+
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDrawer(); closeModal(); } });
+
+      const observer = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); } }); }, { threshold: 0.1 });
+      document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+      renderAll();
+    });
+  </script>
+</body>
+</html>
