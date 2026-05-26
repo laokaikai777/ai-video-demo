@@ -49,6 +49,7 @@
     .float-card:hover { transform: translateY(-4px); border-color: rgba(184,148,95,.28); box-shadow: 0 18px 48px rgba(0,0,0,.28); }
     .interactive { transition: transform .24s ease, border-color .24s ease, background-color .24s ease, color .24s ease, box-shadow .24s ease; }
     .interactive:hover { transform: translateY(-1px); }
+    .interactive:focus-visible { outline: 2px solid rgba(184,148,95,.5); outline-offset: 2px; }
     .active-chip { background: rgba(184,148,95,.12); border-color: rgba(184,148,95,.35); color: #f2d4a0; box-shadow: 0 0 0 1px rgba(184,148,95,.08) inset; }
     @keyframes sweep { to { transform: translateX(130%); } }
     @keyframes pulse { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1); } }
@@ -120,8 +121,8 @@
         <a href="#faq" class="interactive hover:text-white">FAQ</a>
       </nav>
       <div class="flex items-center gap-2">
-        <button id="fxToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="环境特效">☀️</button>
-        <button id="soundToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="白噪音">🔇</button>
+        <button id="fxToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="环境特效" aria-label="切换屏幕特效">☀️</button>
+        <button id="soundToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="白噪音" aria-label="切换白噪音">🔇</button>
         <button id="resetProjectBtn" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-mist hover:border-gold/30 hover:text-white">重新开始</button>
         <button id="exportBtn" class="interactive rounded-full bg-gold px-3 py-2 text-sm font-semibold text-ink hover:bg-[#d7b27c]">导出项目</button>
       </div>
@@ -1114,6 +1115,23 @@ $('#fxToggle').addEventListener('click', cycleFX);
 $('#soundToggle').addEventListener('click', cycleSound);
 $('#resetProjectBtn').addEventListener('click', resetProject);
 $('#exportBtn').addEventListener('click', showExport);
+
+// ESC key to close modals
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!$('#confirmOverlay').classList.contains('hidden')) {
+      $('#confirmOverlay').classList.add('hidden');
+      confirmCallback = null;
+    }
+    if (!$('#exportOverlay').classList.contains('hidden')) {
+      $('#exportOverlay').classList.add('hidden');
+    }
+  }
+});
+
+// Close overlays on backdrop click
+$('#confirmOverlay').addEventListener('click', (e) => { if (e.target === $('#confirmOverlay')) { $('#confirmOverlay').classList.add('hidden'); confirmCallback = null; } });
+$('#exportOverlay').addEventListener('click', (e) => { if (e.target === $('#exportOverlay')) { $('#exportOverlay').classList.add('hidden'); } });
 
 // Sync config inputs
 ['#ideaInput','#platformSelect','#styleSelect','#audienceSelect','#aspectSelect'].forEach(sel => {
