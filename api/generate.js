@@ -1,11 +1,37 @@
-import { buildSystemPrompt } from '../lib/prompts.js';
+import { buildSegmentsPrompt, buildAssetsPrompt, buildProductionPrompt } from '../lib/prompts.js';
 
 const API_KEY = process.env.API_KEY;
 const API_ENDPOINT = process.env.API_ENDPOINT || 'https://cloud.hongqiye.com';
 const MODEL = process.env.MODEL || 'claude-sonnet-4-6';
 
+async function callAI(prompt, maxTokens = 2048) {
+  const res = await fetch(`${API_ENDPOINT}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`AI 返回错误 (${res.status}): ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const raw = data?.choices?.[0]?.message?.content || '';
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : raw;
+  return JSON.parse(jsonStr);
+}
+
 export default async function handler(req, res) {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -27,58 +53,25 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '服务器未配置 API Key' });
   }
 
-  const systemPrompt = buildSystemPrompt(idea, platform, style, audience, aspectRatio);
-
   try {
-    const response = await fetch(`${API_ENDPOINT}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4096,
-        temperature: 0.7,
-        messages: [
-          { role: 'user', content: systemPrompt }
-        ]
-      })
-    });
+    // 3 个 AI 请求并行，每个 20-30 秒，总耗时 ~30 秒
+    const [segmentsData, assetsData, productionData] = await Promise.all([
+      callAI(buildSegmentsPrompt(idea, platform, style, audience, aspectRatio), 2048),
+      callAI(buildAssetsPrompt(idea, style), 1024),
+      callAI(buildProductionPrompt(idea, platform, style), 1024)
+    ]);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return res.status(502).json({ error: `AI 模型返回错误 (${response.status})`, detail: errText.slice(0, 300) });
-    }
-
-    const data = await response.json();
-    const rawContent = data?.choices?.[0]?.message?.content || '';
-
-    // Extract JSON from the response (it may be wrapped in markdown code blocks)
-    let jsonStr = rawContent.trim();
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[0];
-    }
-
-    let result;
-    try {
-      result = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      return res.status(502).json({
-        error: 'AI 返回的内容无法解析为 JSON',
-        rawContent: rawContent.slice(0, 500)
-      });
-    }
-
-    // Ensure required fields exist
-    result.segments = result.segments || [];
-    result.characters = result.characters || [];
-    result.scenes = result.scenes || [];
-    result.storyboardSegments = result.storyboardSegments || [];
-    result.musicDirection = result.musicDirection || {};
-    result.checklist = result.checklist || [];
-    result.advice = result.advice || '';
+    const result = {
+      projectTitle: segmentsData.projectTitle || '',
+      projectBrief: segmentsData.projectBrief || '',
+      segments: segmentsData.segments || [],
+      characters: assetsData.characters || [],
+      scenes: assetsData.scenes || [],
+      storyboardSegments: productionData.storyboardSegments || [],
+      musicDirection: productionData.musicDirection || {},
+      checklist: productionData.checklist || [],
+      advice: productionData.advice || ''
+    };
 
     return res.status(200).json({ success: true, data: result });
   } catch (err) {
