@@ -1,0 +1,7 @@
+{
+  "name": "ai-video-director-api",
+  "version": "1.0.0",
+  "description": "AI视频导演台 - 后端API",
+  "type": "module",
+  "dependencies": {}
+}
