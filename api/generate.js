@@ -2,7 +2,7 @@ import { buildSystemPrompt } from '../lib/prompts.js';
 
 const API_KEY = process.env.API_KEY;
 const API_ENDPOINT = process.env.API_ENDPOINT || 'https://cloud.hongqiye.com';
-const MODEL = process.env.MODEL || 'claude-opus-4-7';
+const MODEL = process.env.MODEL || 'claude-sonnet-4-6';
 
 export default async function handler(req, res) {
   // CORS preflight
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 8192,
+        max_tokens: 4096,
         temperature: 0.7,
         messages: [
           { role: 'user', content: systemPrompt }
