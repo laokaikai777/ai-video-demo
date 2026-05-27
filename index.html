@@ -274,45 +274,25 @@
 
   <main>
     <!-- ===== HERO KV ===== -->
-    <!-- Hero: Light Table Layout -->
-    <div class="hero-kv-container mb-8">
-      <div class="mb-4 md:mb-6">
-        <p class="text-[10px] md:text-[11px] uppercase tracking-[0.35em] text-mist/60 mb-2">Cinematic Pre-Production System</p>
-        <h2 class="text-xl md:text-3xl font-bold text-white tracking-[0.03em] font-display">从一句话，到完整制片方案</h2>
-        <p class="mt-2 text-sm text-mist/60 max-w-2xl">五个AI角色接力协作——编剧、导演、服化道、音乐、分镜。每一条提示词都精准到可以直接复制粘贴给生图AI和视频生成平台。</p>
-      </div>
-      <div class="grid gap-4 md:grid-cols-3">
-        <!-- Card 1: 服化道 -->
-        <div class="light-table-card rounded-2xl border border-white/6 bg-panel/72 shadow-soft panel-frame card-glow-hover">
-          <div class="film-border"><img src="hero-kv.png" alt="服化道产出" class="w-full aspect-[4/3] object-cover" loading="eager"></div>
-          <div class="p-4">
-            <p class="text-[10px] uppercase tracking-[0.25em] text-gold/60 mb-2">服化道设计师 · 产出</p>
-            <div class="prompt-quote"><p class="text-xs text-white/70 leading-relaxed">昭和风木质老书店，暖黄钨丝灯光从书架间隙渗出，空气中有旧纸和咖啡的味道——每件道具的材质和年代感都写进了提示词。</p></div>
-            <p class="text-[10px] text-mist/40 mt-2">→ Midjourney / SD 可直出角色场景图</p>
-          </div>
-        </div>
-        <!-- Card 2: 导演 -->
-        <div class="light-table-card rounded-2xl border border-white/6 bg-panel/72 shadow-soft panel-frame card-glow-hover">
-          <div class="film-border"><img src="scene-board.png" alt="导演产出" class="w-full aspect-[4/3] object-cover" loading="lazy"></div>
-          <div class="p-4">
-            <p class="text-[10px] uppercase tracking-[0.25em] text-gold/60 mb-2">导演 KAI · 产出</p>
-            <div class="prompt-quote"><p class="text-xs text-white/70 leading-relaxed">不止告诉你拍什么——节拍分析精确到每一段的叙事节奏、人物动机和镜头调度建议，导演阐述可以直接拿去做客户提案。</p></div>
-            <p class="text-[10px] text-mist/40 mt-2">→ 制片方案 · 拍摄脚本 · 客户提案</p>
-          </div>
-        </div>
-        <!-- Card 3: 分镜师 -->
-        <div class="light-table-card rounded-2xl border border-white/6 bg-panel/72 shadow-soft panel-frame card-glow-hover">
-          <div class="film-border"><img src="storyboard-triptych.png" alt="分镜师产出" class="w-full aspect-[4/3] object-cover" loading="lazy"></div>
-          <div class="p-4">
-            <p class="text-[10px] uppercase tracking-[0.25em] text-gold/60 mb-2">分镜师 · 产出</p>
-            <div class="prompt-quote"><p class="text-xs text-white/70 leading-relaxed">每条视频提示词按Seedance/可灵/Runway输入标准编写，包含镜头语言、光线、构图、动作描述。</p></div>
-            <p class="text-[10px] text-mist/40 mt-2">→ Seedance / 可灵 / Runway 可直出视频</p>
-          </div>
-        </div>
+        <!-- Hero: 5-Role Pipeline -->
+    <div class="hero-kv-container mb-8 text-center">
+      <p class="text-[11px] tracking-[0.25em] text-gold/60 mb-3 font-display">Five Roles · One Pipeline</p>
+      <h2 class="text-2xl md:text-4xl font-bold text-white tracking-[0.03em] font-display">不是聊天机器人，是五个AI角色的制片团队</h2>
+      <p class="mt-3 text-sm md:text-base text-mist/60 max-w-2xl mx-auto leading-relaxed">编剧理解你的故事，导演掌控叙事节奏，服化道构建视觉世界，音乐总监设计声音情绪，分镜师生成可交付的视频提示词——五步接力，每步确认，产出可直接用于专业制作的结构化资产。</p>
+      <div class="grid gap-3 mt-8" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr">
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-4 panel-frame card-glow-hover text-center"><div class="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto mb-3 overflow-hidden" style="background:rgba(211,177,122,.06)"><svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="38" fill="none" stroke="#d3b17a" stroke-width="1.5" opacity="0.5"/><circle cx="31" cy="33" r="4" fill="#d3b17a" opacity="0.7"/><circle cx="49" cy="33" r="4" fill="#d3b17a" opacity="0.7"/><path d="M35 48 Q40 53 45 48" stroke="#d3b17a" stroke-width="1.2" fill="none" opacity="0.5"/></svg></div><p class="text-sm font-semibold text-white">编剧 KAI</p><p class="text-[11px] text-mist/60 mt-1">拆解故事 · 生成叙事结构</p></div>
+        <div class="hidden sm:flex items-center justify-center text-gold/30 text-xl">→</div>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-4 panel-frame card-glow-hover text-center"><div class="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto mb-3 overflow-hidden" style="background:rgba(123,159,192,.06)"><svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="38" fill="none" stroke="#7b9fc0" stroke-width="1.5" opacity="0.5"/><rect x="20" y="14" width="40" height="10" rx="5" fill="#7b9fc0" opacity="0.12"/><circle cx="31" cy="35" r="3.5" fill="#7b9fc0" opacity="0.6"/><circle cx="49" cy="35" r="3.5" fill="#7b9fc0" opacity="0.6"/></svg></div><p class="text-sm font-semibold text-white">导演 KAI</p><p class="text-[11px] text-mist/60 mt-1">节拍分析 · 场景调度</p></div>
+        <div class="hidden sm:flex items-center justify-center text-gold/30 text-xl">→</div>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-4 panel-frame card-glow-hover text-center"><div class="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto mb-3 overflow-hidden" style="background:rgba(192,144,123,.06)"><svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="38" fill="none" stroke="#c0907b" stroke-width="1.5" opacity="0.5"/><ellipse cx="40" cy="22" rx="18" ry="8" fill="#c0907b" opacity="0.07"/><circle cx="31" cy="36" r="3" fill="#c0907b" opacity="0.55"/><circle cx="49" cy="36" r="3" fill="#c0907b" opacity="0.55"/></svg></div><p class="text-sm font-semibold text-white">服化道设计师</p><p class="text-[11px] text-mist/60 mt-1">角色场景 · 视觉设计</p></div>
+        <div class="hidden sm:flex items-center justify-center text-gold/30 text-xl">→</div>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-4 panel-frame card-glow-hover text-center"><div class="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto mb-3 overflow-hidden" style="background:rgba(139,158,123,.06)"><svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="38" fill="none" stroke="#8b9e7b" stroke-width="1.5" opacity="0.5"/><ellipse cx="40" cy="42" rx="16" ry="8" fill="none" stroke="#8b9e7b" stroke-width="0.8" opacity="0.18"/><circle cx="33" cy="38" r="2.8" fill="#8b9e7b" opacity="0.5"/><circle cx="47" cy="38" r="2.8" fill="#8b9e7b" opacity="0.5"/></svg></div><p class="text-sm font-semibold text-white">音乐总监</p><p class="text-[11px] text-mist/60 mt-1">配乐方案 · Suno提示词</p></div>
+        <div class="hidden sm:flex items-center justify-center text-gold/30 text-xl">→</div>
+        <div class="rounded-2xl border border-gold/25 bg-panel/82 p-4 shadow-glow panel-frame card-glow-hover text-center relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent"></div><div class="relative"><div class="flex h-14 w-14 items-center justify-center rounded-2xl mx-auto mb-3 overflow-hidden" style="background:rgba(155,123,176,.06)"><svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="38" fill="none" stroke="#9b7bb0" stroke-width="1.5" opacity="0.5"/><rect x="22" y="14" width="36" height="24" rx="3" stroke="#9b7bb0" stroke-width="1" opacity="0.32"/><rect x="18" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/><rect x="34" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/><rect x="50" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/></svg></div><p class="text-sm font-semibold text-white">分镜师</p><p class="text-[11px] text-mist/60 mt-1">视频提示词 · 交付清单</p></div></div>
       </div>
     </div>
 
-    <!-- ===== WIZARD SECTION ===== -->
+<!-- ===== WIZARD SECTION ===== -->
     <section id="wizard" class="shell pt-4 md:pt-8 xl:pt-10">
       <!-- Project Config Bar -->
       <div id="configBar" class="relative mb-4 overflow-hidden rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame">
@@ -392,7 +372,6 @@
         <div id="stageCard" class="relative overflow-hidden rounded-[28px] border border-white/6 bg-panel/82 shadow-panel panel-frame noise grain-overlay min-h-[460px] md:min-h-[520px] border-pulse">
           <div class="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent pointer-events-none"></div>
           <div id="stageCardInner" class="relative z-10">
-
 
           </div>
         </div>
@@ -1048,7 +1027,6 @@ function showPromptFullscreen(text, title) {
   </div>`;
   document.body.appendChild(overlay);
 }
-
 
 // ===== API CALL =====
 async function apiCall(action, extra = {}) {
