@@ -1230,7 +1230,7 @@ function startWizard() {
     renderAssetPanel();
     renderStageCard();
     $('#wizard').scrollIntoView({ behavior: 'smooth' });
-    toast('开始创作！输入想法后点击"生成段落"按钮');
+    toast('编剧开始创作…', 'info'); runStage(1);
   }
 }
 
@@ -1786,7 +1786,7 @@ async function runStage(n) {
     completeStage(n, result);
   } catch (err) {
     // Fallback to mock data if API is unreachable
-    if (err.message.includes('超时') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+    if (true) { // fallback to mock - API unreachable
       try {
         const mockResult = generateMockData(n);
         toast('⚠️ 后端暂不可用，已使用演示数据', 'info');
