@@ -244,27 +244,27 @@
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(211,177,122,.08); box-shadow:0 0 16px rgba(211,177,122,.06)">✍️</div>
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl mb-3 overflow-hidden" style="background:rgba(211,177,122,.06); box-shadow:0 0 16px rgba(211,177,122,.06)">${AVATARS.writer}</div>
           <p class="text-sm font-semibold text-white group-hover:text-gold transition-colors">① 编剧 KAI</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">输入一句话想法或上传完整剧本，AI 编剧拆解为 3-4 个叙事段落</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(123,159,192,.08); box-shadow:0 0 16px rgba(123,159,192,.06)">🎬</div>
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl mb-3 overflow-hidden" style="background:rgba(123,159,192,.06); box-shadow:0 0 16px rgba(123,159,192,.06)">${AVATARS.director}</div>
           <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">② 导演 KAI</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">节拍分析、人物小传、场景清单、关键道具——导演视角的整体把控</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(192,144,123,.08); box-shadow:0 0 16px rgba(192,144,123,.06)">🎨</div>
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl mb-3 overflow-hidden" style="background:rgba(192,144,123,.06); box-shadow:0 0 16px rgba(192,144,123,.06)">${AVATARS.designer}</div>
           <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">③ 服化道设计师</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">角色外观、服装材质、场景气氛、道具设计，可直接喂给生图 AI</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(139,158,123,.08); box-shadow:0 0 16px rgba(139,158,123,.06)">🎵</div>
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl mb-3 overflow-hidden" style="background:rgba(139,158,123,.06); box-shadow:0 0 16px rgba(139,158,123,.06)">${AVATARS.music}</div>
           <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">④ 音乐总监</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">曲风定调、BPM、情绪曲线、Suno 提示词，音乐总监一站式出方案</p>
         </div>
         <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(155,123,176,.08); box-shadow:0 0 16px rgba(155,123,176,.06)">🎥</div>
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl mb-3 overflow-hidden" style="background:rgba(155,123,176,.06); box-shadow:0 0 16px rgba(155,123,176,.06)">${AVATARS.storyboard}</div>
           <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">⑤ 分镜师</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">每个段落的视频提示词 + 故事板 + 交付清单，直接对接 Seedance/可灵/Runway</p>
         </div>
@@ -564,13 +564,102 @@
   </div>
 
 <script>
+// ===== CHARACTER AVATARS (inline SVG, gradient-free for reuse) =====
+const AVATARS = {
+  writer: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#d3b17a" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="40" cy="40" r="36" fill="#d3b17a" opacity="0.06"/>
+    <circle cx="40" cy="40" r="24" fill="#d3b17a" opacity="0.04"/>
+    <circle cx="31" cy="33" r="4" fill="#d3b17a" opacity="0.7"/>
+    <circle cx="49" cy="33" r="4" fill="#d3b17a" opacity="0.7"/>
+    <circle cx="31" cy="34" r="1.2" fill="#070a10"/>
+    <circle cx="49" cy="34" r="1.2" fill="#070a10"/>
+    <rect x="24" y="27" width="14" height="9" rx="4.5" fill="none" stroke="#d3b17a" stroke-width="1.2" opacity="0.6"/>
+    <rect x="42" y="27" width="14" height="9" rx="4.5" fill="none" stroke="#d3b17a" stroke-width="1.2" opacity="0.6"/>
+    <line x1="25" y1="30" x2="37" y2="30" stroke="#d3b17a" stroke-width="0.8" opacity="0.4"/>
+    <line x1="43" y1="30" x2="55" y2="30" stroke="#d3b17a" stroke-width="0.8" opacity="0.4"/>
+    <path d="M35 48 Q40 53 45 48" stroke="#d3b17a" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <rect x="36" y="52" width="8" height="10" rx="2" fill="#d3b17a" opacity="0.12"/>
+    <line x1="40" y1="52" x2="40" y2="62" stroke="#d3b17a" stroke-width="0.6" opacity="0.3"/>
+    <line x1="27" y1="24" x2="22" y2="17" stroke="#d3b17a" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="20" cy="15" r="2.5" fill="none" stroke="#d3b17a" stroke-width="0.8" opacity="0.4"/>
+    <line x1="32" y1="24" x2="35" y2="17" stroke="#d3b17a" stroke-width="1.2" stroke-linecap="round" opacity="0.35"/>
+  </svg>`,
+  director: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#7b9fc0" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="40" cy="40" r="36" fill="#7b9fc0" opacity="0.06"/>
+    <circle cx="40" cy="40" r="22" fill="#7b9fc0" opacity="0.04"/>
+    <rect x="20" y="14" width="40" height="10" rx="5" fill="#7b9fc0" opacity="0.12"/>
+    <rect x="22" y="16" width="36" height="6" rx="3" fill="#7b9fc0" opacity="0.08"/>
+    <line x1="20" y1="22" x2="20" y2="16" stroke="#7b9fc0" stroke-width="1.5" opacity="0.35"/>
+    <line x1="60" y1="22" x2="60" y2="16" stroke="#7b9fc0" stroke-width="1.5" opacity="0.35"/>
+    <circle cx="31" cy="35" r="3.5" fill="#7b9fc0" opacity="0.6"/>
+    <circle cx="49" cy="35" r="3.5" fill="#7b9fc0" opacity="0.6"/>
+    <circle cx="31" cy="36" r="1" fill="#070a10"/>
+    <circle cx="49" cy="36" r="1" fill="#070a10"/>
+    <path d="M34 48 Q40 52 46 48" stroke="#7b9fc0" stroke-width="1.3" fill="none" opacity="0.5"/>
+    <rect x="25" y="56" width="30" height="6" rx="3" fill="#7b9fc0" opacity="0.1"/>
+    <rect x="28" y="54" width="24" height="4" rx="2" fill="#7b9fc0" opacity="0.07"/>
+  </svg>`,
+  designer: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#c0907b" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="40" cy="40" r="36" fill="#c0907b" opacity="0.06"/>
+    <circle cx="40" cy="40" r="20" fill="#c0907b" opacity="0.04"/>
+    <ellipse cx="40" cy="22" rx="18" ry="8" fill="#c0907b" opacity="0.07"/>
+    <path d="M22 22 Q30 14 40 14 Q50 14 58 22" stroke="#c0907b" stroke-width="1.2" fill="none" opacity="0.35"/>
+    <circle cx="31" cy="36" r="3" fill="#c0907b" opacity="0.55"/>
+    <circle cx="49" cy="36" r="3" fill="#c0907b" opacity="0.55"/>
+    <circle cx="31" cy="37" r="1" fill="#070a10"/>
+    <circle cx="49" cy="37" r="1" fill="#070a10"/>
+    <path d="M35 49 Q40 53 45 49" stroke="#c0907b" stroke-width="1.2" fill="none" opacity="0.45"/>
+    <circle cx="34" cy="56" r="7" fill="none" stroke="#c0907b" stroke-width="0.8" opacity="0.28"/>
+    <circle cx="34" cy="56" r="3" fill="#c0907b" opacity="0.08"/>
+    <circle cx="37" cy="53" r="1.5" fill="#c0907b" opacity="0.12"/>
+    <circle cx="31" cy="58" r="1.2" fill="#c0907b" opacity="0.1"/>
+    <line x1="41" y1="56" x2="58" y2="52" stroke="#c0907b" stroke-width="1.8" stroke-linecap="round" opacity="0.4"/>
+    <circle cx="60" cy="50" r="2" fill="none" stroke="#c0907b" stroke-width="0.8" opacity="0.35"/>
+  </svg>`,
+  music: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#8b9e7b" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="40" cy="40" r="36" fill="#8b9e7b" opacity="0.06"/>
+    <circle cx="40" cy="40" r="26" fill="#8b9e7b" opacity="0.04"/>
+    <path d="M21 18 Q21 26 21 34 Q21 42 21 48" stroke="#8b9e7b" stroke-width="2.5" fill="none" opacity="0.18"/>
+    <rect x="17" y="14" width="12" height="4" rx="2" fill="#8b9e7b" opacity="0.1"/>
+    <path d="M59 20 Q59 28 59 36 Q59 44 59 50" stroke="#8b9e7b" stroke-width="2.5" fill="none" opacity="0.18"/>
+    <rect x="55" y="16" width="12" height="4" rx="2" fill="#8b9e7b" opacity="0.1"/>
+    <ellipse cx="40" cy="42" rx="16" ry="8" fill="none" stroke="#8b9e7b" stroke-width="0.8" opacity="0.18"/>
+    <ellipse cx="40" cy="42" rx="10" ry="4" fill="none" stroke="#8b9e7b" stroke-width="0.6" opacity="0.12"/>
+    <circle cx="33" cy="38" r="2.8" fill="#8b9e7b" opacity="0.5"/>
+    <circle cx="47" cy="38" r="2.8" fill="#8b9e7b" opacity="0.5"/>
+    <circle cx="33" cy="39" r="0.8" fill="#070a10"/>
+    <circle cx="47" cy="39" r="0.8" fill="#070a10"/>
+    <path d="M36 46 Q40 49 44 46" stroke="#8b9e7b" stroke-width="1" fill="none" opacity="0.4"/>
+  </svg>`,
+  storyboard: `<svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="38" fill="none" stroke="#9b7bb0" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="40" cy="40" r="36" fill="#9b7bb0" opacity="0.06"/>
+    <circle cx="40" cy="40" r="28" fill="#9b7bb0" opacity="0.04"/>
+    <rect x="22" y="14" width="36" height="24" rx="3" fill="#9b7bb0" opacity="0.07"/>
+    <rect x="22" y="14" width="36" height="24" rx="3" stroke="#9b7bb0" stroke-width="1" opacity="0.32"/>
+    <line x1="22" y1="22" x2="58" y2="22" stroke="#9b7bb0" stroke-width="0.6" opacity="0.22"/>
+    <line x1="22" y1="28" x2="58" y2="28" stroke="#9b7bb0" stroke-width="0.6" opacity="0.22"/>
+    <line x1="22" y1="34" x2="48" y2="34" stroke="#9b7bb0" stroke-width="0.6" opacity="0.22"/>
+    <rect x="18" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/>
+    <rect x="34" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/>
+    <rect x="50" y="42" width="12" height="9" rx="2" fill="none" stroke="#9b7bb0" stroke-width="0.8" opacity="0.28"/>
+    <circle cx="34" cy="58" r="3" fill="#9b7bb0" opacity="0.45"/>
+    <circle cx="46" cy="58" r="3" fill="#9b7bb0" opacity="0.45"/>
+    <path d="M36 62 Q40 65 44 62" stroke="#9b7bb0" stroke-width="1" fill="none" opacity="0.35"/>
+  </svg>`
+};
+
 // ===== STATE =====
 const STAGES = [
-  { id: 1, name: '编剧', icon: 'fa-pencil', role: '编剧 KAI', desc: '将你的想法拆解成叙事结构', color: '#d3b17a', emoji: '✍️', tagline: '故事从一句话开始' },
-  { id: 2, name: '导演', icon: 'fa-video-camera', role: '导演 KAI', desc: '做节拍分析，梳理人物场景道具', color: '#7b9fc0', emoji: '🎬', tagline: '掌控叙事节奏' },
-  { id: 3, name: '服化道', icon: 'fa-paint-brush', role: '服化道设计师', desc: '设计角色外观与场景气氛', color: '#c0907b', emoji: '🎨', tagline: '让世界观可见' },
-  { id: 4, name: '音乐', icon: 'fa-music', role: '音乐总监', desc: '设计配乐方案与环境音', color: '#8b9e7b', emoji: '🎵', tagline: '耳朵里的情绪' },
-  { id: 5, name: '分镜', icon: 'fa-film', role: '分镜师', desc: '生成视频提示词与交付清单', color: '#9b7bb0', emoji: '🎥', tagline: '文字变成画面' }
+  { id: 1, name: '编剧', icon: 'fa-pencil', role: '编剧 KAI', desc: '将你的想法拆解成叙事结构', color: '#d3b17a', emoji: '✍️', tagline: '故事从一句话开始', avatar: 'writer' },
+  { id: 2, name: '导演', icon: 'fa-video-camera', role: '导演 KAI', desc: '做节拍分析，梳理人物场景道具', color: '#7b9fc0', emoji: '🎬', tagline: '掌控叙事节奏', avatar: 'director' },
+  { id: 3, name: '服化道', icon: 'fa-paint-brush', role: '服化道设计师', desc: '设计角色外观与场景气氛', color: '#c0907b', emoji: '🎨', tagline: '让世界观可见', avatar: 'designer' },
+  { id: 4, name: '音乐', icon: 'fa-music', role: '音乐总监', desc: '设计配乐方案与环境音', color: '#8b9e7b', emoji: '🎵', tagline: '耳朵里的情绪', avatar: 'music' },
+  { id: 5, name: '分镜', icon: 'fa-film', role: '分镜师', desc: '生成视频提示词与交付清单', color: '#9b7bb0', emoji: '🎥', tagline: '文字变成画面', avatar: 'storyboard' }
 ];
 
 const API_URL = 'https://ai-video-demo-psi.vercel.app/api/generate';
@@ -797,7 +886,7 @@ function renderStageCard() {
       <!-- Header with character avatar -->
       <div class="flex items-start gap-4 mb-6">
         <div class="relative shrink-0">
-          <div class="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl" style="background:${s.color}15; box-shadow:0 0 20px ${s.color}10, inset 0 0 20px ${s.color}08">${s.emoji}</div>
+          <div class="flex h-20 w-20 items-center justify-center rounded-2xl overflow-hidden" style="background:${s.color}0D; box-shadow:0 0 24px ${s.color}10, inset 0 0 24px ${s.color}06">${AVATARS[s.avatar]}</div>
           ${st.status === 'active' ? `<div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-ink stage-active"></div>` : ''}
         </div>
         <div class="flex-1">
