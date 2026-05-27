@@ -156,6 +156,7 @@
       <div class="flex items-center gap-2">
         <button id="fxToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="环境特效" aria-label="切换屏幕特效">☀️</button>
         <button id="soundToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="白噪音" aria-label="切换白噪音">🔇</button>
+        <button id="musicToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="氛围音乐" aria-label="切换氛围音乐">🎼</button>
         <button id="resetProjectBtn" class="interactive rounded-full border border-white/10 px-3 py-2 text-sm text-mist hover:border-gold/30 hover:text-white">重新开始</button>
         <button id="exportBtn" class="interactive rounded-full bg-gold px-3 py-2 text-sm font-semibold text-ink hover:bg-[#d7b27c]">导出项目</button>
       </div>
@@ -1586,6 +1587,116 @@ function cycleSound() {
   }
 }
 
+// ===== CINEMATIC MUSIC ENGINE =====
+let musicCtx = null;
+let musicNodes = [];
+let musicPlaying = false;
+let musicTimeout = null;
+
+const PENTATONIC = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99];
+
+async function initMusicCtx() {
+  if (!musicCtx) musicCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (musicCtx.state === 'suspended') await musicCtx.resume();
+}
+
+function stopMusic() {
+  musicNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  musicNodes = [];
+  if (musicTimeout) { clearTimeout(musicTimeout); musicTimeout = null; }
+  musicPlaying = false;
+}
+
+function playNote(freq, startTime, duration = 1.5, gain = 0.04, type = 'sine') {
+  const osc = musicCtx.createOscillator();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const g = musicCtx.createGain();
+  g.gain.setValueAtTime(0, startTime);
+  g.gain.linearRampToValueAtTime(gain, startTime + 0.2);
+  g.gain.linearRampToValueAtTime(gain * 0.6, startTime + duration * 0.6);
+  g.gain.linearRampToValueAtTime(0, startTime + duration);
+  osc.connect(g);
+  g.connect(musicCtx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.1);
+  musicNodes.push(osc);
+}
+
+function scheduleNextNote() {
+  if (!musicPlaying) return;
+  const now = musicCtx.currentTime;
+  const freq = PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)];
+  const dur = 1.2 + Math.random() * 2.5;
+  const gain = 0.02 + Math.random() * 0.04;
+  playNote(freq, now + 0.1, dur, gain, Math.random() > 0.5 ? 'sine' : 'triangle');
+  musicTimeout = setTimeout(scheduleNextNote, 800 + Math.random() * 2200);
+}
+
+function startCinematicMusic() {
+  initMusicCtx().then(() => {
+    stopMusic();
+    musicPlaying = true;
+
+    // Drone layer: two detuned low sine waves
+    const osc1 = musicCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = 55; // A1
+    const g1 = musicCtx.createGain();
+    g1.gain.value = 0.03;
+    osc1.connect(g1);
+    g1.connect(musicCtx.destination);
+    osc1.start();
+    musicNodes.push(osc1);
+
+    const osc2 = musicCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 65.41; // C2
+    const g2 = musicCtx.createGain();
+    g2.gain.value = 0.025;
+    osc2.connect(g2);
+    g2.connect(musicCtx.destination);
+    osc2.start();
+    musicNodes.push(osc2);
+
+    // Subtle pad: higher octave, very quiet, slow modulation
+    const osc3 = musicCtx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.value = 261.63; // C4
+    const g3 = musicCtx.createGain();
+    g3.gain.value = 0.015;
+    // Slow tremolo via LFO
+    const lfo = musicCtx.createOscillator();
+    lfo.frequency.value = 0.12;
+    const lfoG = musicCtx.createGain();
+    lfoG.gain.value = 0.008;
+    lfo.connect(lfoG);
+    lfoG.connect(g3.gain);
+    lfo.start();
+    osc3.connect(g3);
+    g3.connect(musicCtx.destination);
+    osc3.start();
+    musicNodes.push(osc3, lfo);
+
+    // Start melodic fragments
+    scheduleNextNote();
+  });
+}
+
+function toggleMusic() {
+  if (musicPlaying) {
+    stopMusic();
+    $('#musicToggle').textContent = '🎼';
+    $('#musicToggle').title = '氛围音乐';
+    toast('氛围音乐已关闭');
+  } else {
+    startCinematicMusic();
+    $('#musicToggle').textContent = '🎼✨';
+    $('#musicToggle').title = '关闭氛围音乐';
+    toast('🎵 电影感氛围音乐');
+  }
+}
+
 // ===== RESET =====
 function resetProject() {
   showConfirm('重新开始', '将清除所有创作内容。确认重新开始吗？', () => {
@@ -1617,6 +1728,7 @@ $$('.faq-toggle').forEach(btn => {
 // ===== EVENT BINDINGS =====
 $('#fxToggle').addEventListener('click', cycleFX);
 $('#soundToggle').addEventListener('click', cycleSound);
+$('#musicToggle').addEventListener('click', toggleMusic);
 $('#resetProjectBtn').addEventListener('click', resetProject);
 $('#exportBtn').addEventListener('click', showExport);
 
