@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" style="color-scheme:dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI视频导演台 — 五个AI角色，接力完成视频前期制作</title>
+  <meta name="theme-color" content="#070a10" />
+  <title>AI视频导演台 — 五个AI角色接力创作，从灵感到制片方案</title>
   <!-- config-version: v7.0.10.1 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <script>
@@ -16,6 +20,7 @@
             line: '#273142', lineSoft: '#1b2230', mist: '#8894a9', smoke: '#d6dce7',
             gold: '#b8945f', goldSoft: '#8e6b3f', steel: '#1a2534', slateBlue: '#213047', accent: '#d3b17a'
           },
+          fontFamily: { serif: ['"Noto Serif SC"', 'Georgia', 'serif'] },
           boxShadow: {
             panel: '0 28px 80px rgba(0,0,0,.42)',
             glow: '0 0 0 1px rgba(184,148,95,.18), 0 18px 50px rgba(0,0,0,.38)',
@@ -72,6 +77,7 @@
     @keyframes cardHoverGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(184,148,95,.1), 0 12px 36px rgba(0,0,0,.25); } 50% { box-shadow: 0 0 0 1px rgba(184,148,95,.25), 0 20px 48px rgba(184,148,95,.12); } }
     @keyframes imageReveal { from { opacity: 0; transform: scale(1.04); filter: blur(8px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
     @keyframes borderPulse { 0%, 100% { border-color: rgba(184,148,95,.12); } 50% { border-color: rgba(184,148,95,.35); } }
+    @keyframes doneGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(74,222,128,.06), 0 12px 36px rgba(0,0,0,.25); } 50% { box-shadow: 0 0 0 1px rgba(74,222,128,.15), 0 18px 44px rgba(74,222,128,.06); } }
     @keyframes gentleDrift { 0% { transform: translate(0,0); } 25% { transform: translate(4px,-4px); } 50% { transform: translate(-2px,-8px); } 75% { transform: translate(-6px,-2px); } 100% { transform: translate(0,0); } }
     .pulse-dot { animation: pulse 2s ease-in-out infinite; }
     .stage-active { animation: stageGlow 2.2s ease-in-out infinite; }
@@ -88,7 +94,7 @@
     /* Card texture overlay */
     .grain-overlay::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .035; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); background-size: 200px 200px; border-radius: inherit; }
     /* Asset chip */
-    .asset-chip { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); border-radius: 999px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.65); transition: all .22s ease; }
+    .asset-chip { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); border-radius: 999px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.65); transition: background .22s ease, color .22s ease, border-color .22s ease; }
     .asset-chip:hover { background: rgba(184,148,95,.08); border-color: rgba(184,148,95,.25); color: #d3b17a; }
     /* Stage transition */
     .stage-card-enter { animation: fadeInScale .45s cubic-bezier(.16,1,.3,1) both; }
@@ -113,8 +119,10 @@
     .typewriter-text::after { content: '|'; animation: typewriterCursor .8s step-end infinite; color: #b8945f; }
     /* Border pulse for active elements */
     .border-pulse { animation: borderPulse 3s ease-in-out infinite; }
+    .done-glow { animation: doneGlow 3s ease-in-out infinite; }
     /* Gentle drift for decorative elements */
     .gentle-drift { animation: gentleDrift 12s ease-in-out infinite; }
+    h2, h3, .font-display { font-family: 'Noto Serif SC', Georgia, serif; }
     @media (max-width: 1024px) {
       .asset-panel-mobile { max-height: 320px; }
       .hero-kv-text { padding: 1rem !important; }
@@ -151,9 +159,12 @@
     @media (max-width: 1024px) {
       #hamburgerBtn { display: flex; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
-<body class="text-smoke antialiased selection:bg-gold/30 selection:text-white">
+<body class="text-smoke antialiased selection:bg-gold/30 selection:text-white" style="touch-action:manipulation">
   <div class="fixed inset-0 pointer-events-none opacity-30 bg-grid bg-[size:32px_32px]"></div>
   <div class="fixed inset-x-0 top-0 h-72 pointer-events-none bg-glow"></div>
   <!-- Cursor glow -->
@@ -197,10 +208,10 @@
 
   <!-- Mobile nav overlay + drawer -->
   <div id="mobileNavOverlay" onclick="closeMobileNav()"></div>
-  <nav id="mobileNavDrawer">
+  <nav id="mobileNavDrawer" style="overscroll-behavior:contain">
     <div class="flex items-center justify-between mb-4">
       <p class="text-[10px] uppercase tracking-[0.35em] text-mist">菜单</p>
-      <button onclick="closeMobileNav()" class="interactive rounded-full border border-white/10 w-8 h-8 flex items-center justify-center text-mist hover:text-white"><i class="fa fa-times"></i></button>
+      <button onclick="closeMobileNav()" class="interactive rounded-full border border-white/10 w-8 h-8 flex items-center justify-center text-mist hover:text-white" aria-label="关闭导航菜单"><i class="fa fa-times" aria-hidden="true"></i></button>
     </div>
     <a href="#wizard" class="block py-3 border-b border-white/6 text-sm text-mist hover:text-white interactive" onclick="closeMobileNav()">🎬 创作台</a>
     <a href="#workflow" class="block py-3 border-b border-white/6 text-sm text-mist hover:text-white interactive" onclick="closeMobileNav()">📋 工作流</a>
@@ -210,11 +221,11 @@
     <a href="#contact" class="block py-3 border-b border-white/6 text-sm text-mist hover:text-white interactive" onclick="closeMobileNav()">📞 联系</a>
     <div class="mt-4 flex gap-2">
       <button onclick="cycleSound();closeMobileNav();" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-mist hover:text-gold">🔇 白噪音</button>
-      <button onclick="toggleMusic();closeMobileNav();" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-mist hover:text-gold">🎼 氛围音乐</button>
+      <button onclick="cycleMusic();closeMobileNav();" class="interactive rounded-full border border-white/10 px-3 py-1.5 text-xs text-mist hover:text-gold">🎼 氛围音乐</button>
     </div>
   </nav>
 
-  <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition" aria-live="polite"></div>
 
   <main>
     <!-- ===== HERO KV ===== -->
@@ -224,7 +235,7 @@
       <div class="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-10 hero-kv-text">
         <p class="kv-subtitle text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-gold/80 mb-1 md:mb-2">Five AI Roles · One Production Pipeline</p>
         <h2 class="text-base md:text-xl lg:text-3xl font-bold text-white tracking-[0.04em] md:tracking-[0.06em]">从一句话到完整制片方案</h2>
-        <p class="hidden sm:block mt-1 md:mt-2 text-xs md:text-sm text-smoke/70 max-w-lg">编剧理解你的故事，导演掌控叙事节奏，服化道构建视觉世界，音乐总监设计声音情绪，分镜师生成可交付的视频提示词。</p>
+        <p class="hidden sm:block mt-1 md:mt-2 text-xs md:text-sm text-smoke/70 max-w-lg">编剧拆解你的故事，导演掌控叙事节奏，服化道构建视觉世界，音乐总监设计声音情绪，分镜师交付可执行的视频提示词——五步拿到完整制片方案，不是聊天记录。</p>
       </div>
     </div>
 
@@ -232,24 +243,60 @@
     <section id="wizard" class="shell pt-4 md:pt-8 xl:pt-10">
       <!-- Project Config Bar -->
       <div id="configBar" class="relative mb-4 overflow-hidden rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame">
-        <div class="flex flex-wrap items-center gap-3 p-3 md:p-4">
-          <div class="flex-1 min-w-[200px]">
-            <label class="text-[10px] uppercase tracking-[0.3em] text-mist">一句话想法</label>
-            <input id="ideaInput" type="text" class="w-full bg-transparent border-b border-white/10 py-1.5 text-sm text-white placeholder:text-mist/50 focus:border-gold/50 focus:outline-none" placeholder="输入你的视频想法...">
+        <!-- Mode Tabs -->
+        <div class="flex border-b border-white/6">
+          <button id="tabIdea" class="flex-1 px-4 py-3 text-sm font-medium text-gold border-b-2 border-gold interactive" onclick="switchMode('idea')">
+            <i class="fa fa-lightbulb-o mr-1.5"></i>从想法出发
+          </button>
+          <button id="tabScript" class="flex-1 px-4 py-3 text-sm text-mist border-b-2 border-transparent interactive hover:text-white" onclick="switchMode('script')">
+            <i class="fa fa-file-text-o mr-1.5"></i>已有剧本
+          </button>
+        </div>
+        <div class="p-3 md:p-4 space-y-3">
+          <!-- Idea input (Path A) -->
+          <div id="ideaArea">
+            <div class="flex-1">
+              <label class="text-[10px] uppercase tracking-[0.3em] text-mist">一句话想法 <span class="text-gold/60">— 描述你的故事灵感</span></label>
+              <input id="ideaInput" type="text" class="w-full bg-transparent border-b border-white/10 py-1.5 text-sm text-white placeholder:text-mist/50 focus:border-gold/50 focus:outline-none" placeholder="例如：一个雨夜，便利店店员发现每件商品都藏着顾客的秘密...">
+            </div>
           </div>
+          <!-- Script upload (Path B) -->
+          <div id="scriptArea" class="hidden">
+            <label class="text-[10px] uppercase tracking-[0.3em] text-mist">上传或粘贴剧本 <span class="text-gold/60">— 支持 .md / .txt，粘贴后自动跳过编剧步骤</span></label>
+            <div class="flex gap-2">
+              <label class="interactive rounded-full border border-white/10 bg-panelSoft px-4 py-2 text-xs text-mist hover:border-gold/30 hover:text-white cursor-pointer">
+                <i class="fa fa-upload mr-1"></i>上传文件
+                <input type="file" id="scriptFile" accept=".md,.txt" class="hidden" onchange="handleScriptFile(event)">
+              </label>
+              <button id="pasteScriptBtn" class="interactive rounded-full border border-white/10 bg-panelSoft px-4 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" onclick="toggleScriptPaste()">
+                <i class="fa fa-clipboard mr-1"></i>粘贴文本
+              </button>
+            </div>
+            <textarea id="scriptPasteArea" class="hidden mt-2 w-full bg-panelSoft border border-white/10 rounded-xl p-3 text-sm text-white placeholder:text-mist/50 focus:border-gold/40 focus:outline-none resize-y" rows="4" placeholder="在此粘贴你的剧本内容...&#10;&#10;粘贴后自动跳过编剧步骤，从导演分析开始。"></textarea>
+            <p id="scriptStatus" class="hidden mt-1 text-[10px] text-gold/70"><i class="fa fa-check-circle mr-1"></i><span></span></p>
+          </div>
+          <!-- Options row -->
           <div class="flex flex-wrap gap-2 text-xs">
-            <select id="platformSelect" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="抖音">抖音</option><option value="小红书">小红书</option><option value="B站">B站</option><option value="品牌片">品牌片</option>
+            <select id="platformSelect" aria-label="选择发布平台" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
+              <option value="抖音/快手">抖音/快手</option><option value="小红书">小红书</option><option value="视频号">视频号</option><option value="B站">B站</option><option value="YouTube">YouTube</option><option value="TikTok">TikTok</option><option value="品牌广告">品牌广告</option><option value="院线/电影节">院线/电影节</option><option value="全平台适配">全平台适配</option>
             </select>
-            <select id="styleSelect" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="电影感写实">电影感写实</option><option value="赛博朋克">赛博朋克</option><option value="古风唯美">古风唯美</option><option value="极简北欧">极简北欧</option><option value="日系治愈">日系治愈</option>
+            <select id="styleSelect" aria-label="选择视觉风格" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
+              <option value="电影感写实">电影感写实</option><option value="赛博朋克/科幻">赛博朋克/科幻</option><option value="古风/国潮">古风/国潮</option><option value="极简/北欧">极简/北欧</option><option value="日系治愈/动漫">日系治愈/动漫</option><option value="暗黑/悬疑">暗黑/悬疑</option><option value="纪录片/纪实">纪录片/纪实</option><option value="时尚/奢侈品">时尚/奢侈品</option><option value="卡通/3D动画">卡通/3D动画</option><option value="复古/胶片">复古/胶片</option>
             </select>
-            <select id="audienceSelect" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="年轻女性">年轻女性</option><option value="潮流青年">潮流青年</option><option value="职场人群">职场人群</option><option value="泛人群">泛人群</option>
+            <select id="audienceSelect" aria-label="选择目标受众" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
+              <option value="Z世代(18-25)">Z世代(18-25)</option><option value="都市白领(25-35)">都市白领(25-35)</option><option value="潮流文化爱好者">潮流文化爱好者</option><option value="文艺/艺术人群">文艺/艺术人群</option><option value="亲子家庭">亲子家庭</option><option value="泛人群">泛人群</option>
             </select>
-            <select id="aspectSelect" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="21:9">21:9</option>
+            <select id="aspectSelect" aria-label="选择画面比例" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
+              <option value="9:16">9:16 竖屏</option><option value="16:9">16:9 横屏</option><option value="1:1">1:1 方形</option><option value="21:9">21:9 宽银幕</option><option value="3:4">3:4</option><option value="4:3">4:3</option><option value="2:3">2:3</option><option value="3:2">3:2</option><option value="9:21">9:21</option><option value="Auto">Auto AI自决</option>
             </select>
+            <button id="startWizardBtn" class="interactive rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-ink hover:bg-[#d7b27c]" onclick="startWizard()">
+              <i class="fa fa-play mr-1"></i>开始创作
+            </button>
+          </div>
+          <!-- Reference input (对标爆款) -->
+          <div id="referenceRow" class="flex items-center gap-2">
+            <label class="text-[10px] uppercase tracking-[0.2em] text-mist/60 whitespace-nowrap">对标参考 <span class="text-gold/40">(可选)</span></label>
+            <input id="referenceInput" type="text" class="flex-1 bg-transparent border-b border-white/5 py-1 text-xs text-white/70 placeholder:text-mist/30 focus:border-gold/30 focus:outline-none" placeholder="例如：《繁花》的色调光影、《让子弹飞》的节奏张力、《布达佩斯大饭店》的构图色彩、《盗梦空间》的嵌套叙事...">
           </div>
         </div>
       </div>
@@ -291,8 +338,8 @@
     <section id="workflow" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">5-Stage Pipeline</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">五个AI角色，接力完成前期制作</h3>
-        <p class="mt-2 text-sm text-mist max-w-xl">不是和单个AI来回聊天。编剧、导演、服化道、音乐、分镜——每个角色专精一件事，你审核确认后再交棒给下一位。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">不是聊天。五个AI角色，接力创作。</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl">编剧、导演、服化道、音乐、分镜——每个角色只做一件事，做到极致。你审核每一步，确认后再交接。不会一口气跑偏，不会答非所问。</p>
       </div>
       <div id="workflowGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"></div>
     </section>
@@ -301,20 +348,20 @@
     <section id="pricing" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12 text-center">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Pricing</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">从免费开始，按需升级</h3>
-        <p class="mt-2 text-sm text-mist">没有隐藏费用。所有方案都包含完整的 5 步工作流。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">零门槛上手，按需升级</h3>
+        <p class="mt-2 text-sm text-mist">完整 5 步工作流全员可用，免费版也能走完编剧到分镜全流程。没有隐藏费用，没有功能阉割。</p>
       </div>
       <div class="grid gap-5 md:grid-cols-3 max-w-4xl mx-auto">
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
           <p class="text-sm font-semibold text-white">免费试用</p>
           <p class="mt-2 text-3xl font-bold text-white">¥0</p>
-          <p class="mt-1 text-xs text-mist">每月 3 次完整生成</p>
+          <p class="mt-1 text-xs text-mist">每月 3 次完整生成，体验全流程</p>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
             <li><i class="fa fa-check text-gold mr-1"></i> 完整 5 步创作流程</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 基础资产导出</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 3 次/月生成额度</li>
           </ul>
-          <button class="mt-5 w-full rounded-full border border-gold/30 py-2 text-sm text-gold interactive hover:bg-gold/10">免费开始</button>
+          <button class="mt-5 w-full rounded-full border border-gold/30 py-2 text-sm text-gold interactive hover:bg-gold/10">免费开始创作</button>
         </div>
         <div class="rounded-[24px] border border-gold/25 bg-panel/82 p-6 shadow-glow panel-frame interactive text-center relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-b from-gold/8 via-transparent to-transparent"></div>
@@ -329,20 +376,20 @@
               <li><i class="fa fa-check text-gold mr-1"></i> 故事板增强模式</li>
               <li><i class="fa fa-check text-gold mr-1"></i> 项目云端保存与分享</li>
             </ul>
-            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">立即订阅</button>
+            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">升级专业版</button>
           </div>
         </div>
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
           <p class="text-sm font-semibold text-white">团队版</p>
           <p class="mt-2 text-3xl font-bold text-white">¥188<span class="text-sm text-mist">/月</span></p>
-          <p class="mt-1 text-xs text-mist">多人协作 + API 接入</p>
+          <p class="mt-1 text-xs text-mist">多人协作 + API 接入，小型制作团队首选</p>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
             <li><i class="fa fa-check text-gold mr-1"></i> 全部专业版功能</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 最多 5 人协作</li>
             <li><i class="fa fa-check text-gold mr-1"></i> API 接入权限</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 优先技术支持</li>
           </ul>
-          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">联系销售</button>
+          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">预约演示</button>
         </div>
       </div>
     </section>
@@ -417,6 +464,34 @@
           </button>
           <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">规划中的功能包括：一键导出到 Seedance/可灵、多集项目管理、团队协作空间、自定义模型 BYOK 接入、AI 音乐生成集成、故事板图片自动生成。如果你有特别想要的功能，欢迎通过下面的联系方式告诉我们。</div>
         </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            我的数据安全吗？剧本会不会被拿去训练模型？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">你的创作数据属于你，我们不会用你的剧本训练 AI 模型。所有数据传输加密，项目数据存储在你自己的设备或你授权的云端。我们计划后续支持完全本地化运行——模型在你本地跑，剧本从不出你的电脑。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            和用 ChatGPT/Claude 直接聊有什么本质区别？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">三点核心区别。第一，我们是五个角色接力协作——不是一个人干所有活，每个角色有独立的方法论和审核标准。第二，产出是结构化资产而非聊天记录——角色提示词、场景提示词、视频提示词、音乐方案，每一项都是可以直接复制粘贴使用的工程文件。第三，你始终在回路中——每步确认、可回退、可重做，不会出现 AI 一口气跑偏你还改不了的情况。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            支持哪些语言创作？能做英文内容吗？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">当前以中文创作体验最佳——编剧、导演、服化道、音乐、分镜全流程针对中文内容生态优化。英文和其他语言的内容也可以生成，但提示词细节和平台适配（如 TikTok/YouTube）的精细度不如中文。多语言深度优化在路线图中。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            付费后不满意可以退款吗？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">专业版和团队版支持 7 天无理由退款。如果你试用后觉得不适合你的创作流程，发邮件或微信联系我们，全额退款，不扯皮。我们自己也创作，知道工具好不好用只有上手才知道。</div>
+        </div>
       </div>
     </section>
 
@@ -424,19 +499,20 @@
     <section id="cases" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Case Studies</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">看看其他创作者怎么用</h3>
-        <p class="mt-2 text-sm text-mist max-w-xl">以下是 AI 视频导演台产出的真实案例。每个案例从一句话想法开始，走完完整 5 步流程。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">六种风格，一套流水线</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl">从古风到赛博、从品牌广告到动漫短片——每个案例都从一句话开始，走完完整五步，产出可交付的制片方案。</p>
       </div>
       <div class="grid gap-5 md:grid-cols-3">
+        <!-- Case 1: 古风反转 -->
         <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
           <div class="aspect-[9/16] overflow-hidden relative">
             <img src="storyboard-triptych.png" alt="古风反转短片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
             <div class="absolute bottom-0 left-0 right-0 p-4">
               <p class="text-sm font-semibold text-white">古风反转短片</p>
-              <p class="text-xs text-mist/70 mt-0.5">雨夜真相 · 4段 · 抖音竖屏</p>
+              <p class="text-xs text-mist/70 mt-0.5">雨夜真相 · 4段 · 抖音/快手竖屏</p>
               <div class="flex flex-wrap gap-1.5 mt-2">
-                <span class="text-[10px] bg-gold/15 text-gold/80 rounded-full px-2 py-0.5">古风唯美</span>
+                <span class="text-[10px] bg-gold/15 text-gold/80 rounded-full px-2 py-0.5">古风/国潮</span>
                 <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">悬疑反转</span>
                 <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">9:16</span>
               </div>
@@ -446,6 +522,7 @@
             <p class="text-xs text-mist/70 leading-relaxed">"从'雨夜古风反转'一句话，生成了完整的叙事结构、人物设定、场景设计，视频提示词直接喂给可灵出片。"</p>
           </div>
         </div>
+        <!-- Case 2: 城市情绪 -->
         <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
           <div class="aspect-[9/16] overflow-hidden relative">
             <img src="scene-board.png" alt="城市情绪广告案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
@@ -456,7 +533,7 @@
               <div class="flex flex-wrap gap-1.5 mt-2">
                 <span class="text-[10px] bg-slateBlue/30 text-white/70 rounded-full px-2 py-0.5">电影感写实</span>
                 <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">情绪向</span>
-                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">品牌片</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">品牌广告</span>
               </div>
             </div>
           </div>
@@ -464,6 +541,7 @@
             <p class="text-xs text-mist/70 leading-relaxed">"品牌方给的 brief 很模糊，用导演台拆出了清晰的故事线。导演阐述里的节拍分析直接拿去做客户提案。"</p>
           </div>
         </div>
+        <!-- Case 3: 3D动画 -->
         <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
           <div class="aspect-[9/16] overflow-hidden relative">
             <img src="character-board.png" alt="3D动画短片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
@@ -472,7 +550,7 @@
               <p class="text-sm font-semibold text-white">3D 动画短片</p>
               <p class="text-xs text-mist/70 mt-0.5">星际信使 · 5段 · B站横屏</p>
               <div class="flex flex-wrap gap-1.5 mt-2">
-                <span class="text-[10px] bg-purple-500/15 text-purple-300/80 rounded-full px-2 py-0.5">赛博朋克</span>
+                <span class="text-[10px] bg-purple-500/15 text-purple-300/80 rounded-full px-2 py-0.5">赛博朋克/科幻</span>
                 <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">科幻</span>
                 <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">16:9</span>
               </div>
@@ -480,6 +558,63 @@
           </div>
           <div class="p-4 border-t border-white/6">
             <p class="text-xs text-mist/70 leading-relaxed">"用导演台做完前期策划后，把角色设计和场景提示词导入 Blender 做 previs，节省了至少两天的概念设计时间。"</p>
+          </div>
+        </div>
+        <!-- Case 4: 日系治愈 -->
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="case-healing.png" alt="日系治愈短片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">日系治愈短片</p>
+              <p class="text-xs text-mist/70 mt-0.5">猫与老书店 · 3段 · 小红书竖屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-amber-500/15 text-amber-300/80 rounded-full px-2 py-0.5">日系治愈/动漫</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">温情</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">9:16</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"想把外婆的旧书店拍成短片，AI 帮我把零碎记忆串成了有温度的三段式叙事，服化道设计的昭和风书店场景超有代入感。"</p>
+          </div>
+        </div>
+        <!-- Case 5: 时尚大片 -->
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="case-fashion.png" alt="时尚概念大片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">时尚概念大片</p>
+              <p class="text-xs text-mist/70 mt-0.5">镜中幻境 · 5段 · 品牌竖屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-zinc-400/15 text-zinc-300/80 rounded-full px-2 py-0.5">时尚/奢侈品</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">超现实</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">9:16</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"独立设计师品牌需要一支概念短片，导演台从品牌关键词出发设计了完整的视觉叙事线，服化道出的服装细节提示词直接对接了拍摄团队。"</p>
+          </div>
+        </div>
+        <!-- Case 6: 暗黑悬疑 -->
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="case-thriller.png" alt="暗黑悬疑短剧案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">暗黑悬疑短剧</p>
+              <p class="text-xs text-mist/70 mt-0.5">地下室第7天 · 4段 · B站横屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-red-500/15 text-red-300/80 rounded-full px-2 py-0.5">暗黑/悬疑</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">心理惊悚</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">16:9</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"悬疑短剧需要精密的前期规划——哪个镜头埋线索、哪个镜头误导观众。导演台的分镜步骤帮我把每段的情报释放节奏都理清楚了。"</p>
           </div>
         </div>
       </div>
@@ -523,7 +658,7 @@
               <p class="text-base font-semibold tracking-[0.18em] text-white">AI视频导演台</p>
             </div>
           </div>
-          <p class="mt-4 text-sm leading-7 text-smoke/65">把专业影视前期制作流程——编剧、导演、服化道、音乐、分镜——变成每个创作者都能上手的 AI 协作界面。</p>
+          <p class="mt-4 text-sm leading-7 text-smoke/65">把专业影视前期制作流程——编剧、导演、服化道、音乐、分镜——变成每个创作者都能上手的 AI 协作界面。不是聊天机器人，是五个 AI 角色接力完成你的创作意图。</p>
         </div>
         <div class="grid grid-cols-2 gap-8 text-sm sm:grid-cols-4">
           <div>
@@ -567,7 +702,7 @@
 
   <!-- ===== MODALS ===== -->
   <!-- Confirm Dialog -->
-  <div id="confirmOverlay" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center hidden">
+  <div id="confirmOverlay" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center hidden" style="overscroll-behavior:contain">
     <div class="rounded-[24px] border border-white/8 bg-panel shadow-glow panel-frame p-6 max-w-sm w-full mx-4">
       <p id="confirmTitle" class="text-sm font-semibold text-white mb-2">确认操作</p>
       <p id="confirmMsg" class="text-sm text-mist mb-5"></p>
@@ -579,7 +714,7 @@
   </div>
 
   <!-- Export Modal -->
-  <div id="exportOverlay" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center hidden">
+  <div id="exportOverlay" class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center hidden" style="overscroll-behavior:contain">
     <div class="rounded-[24px] border border-white/8 bg-panel shadow-glow panel-frame p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
       <p class="text-sm font-semibold text-white mb-4">📦 导出项目包</p>
       <div id="exportContent" class="space-y-2 text-sm text-mist"></div>
@@ -682,15 +817,15 @@ const AVATARS = {
 // ===== STATE =====
 const STAGES = [
   { id: 1, name: '编剧', icon: 'fa-pencil', role: '编剧 KAI', desc: '将你的想法拆解成叙事结构', color: '#d3b17a', emoji: '✍️', tagline: '故事从一句话开始', avatar: 'writer',
-    cardDesc: '输入一句话想法或上传完整剧本，AI 编剧拆解为 3-4 个叙事段落' },
+    cardDesc: '把你的灵感拆成扎实的故事骨架——3 到 4 个叙事段落，每段有明确的情节点和情绪目标' },
   { id: 2, name: '导演', icon: 'fa-video-camera', role: '导演 KAI', desc: '做节拍分析，梳理人物场景道具', color: '#7b9fc0', emoji: '🎬', tagline: '掌控叙事节奏', avatar: 'director',
-    cardDesc: '节拍分析、人物小传、场景清单、关键道具——导演视角的整体把控' },
+    cardDesc: '从导演视角审视全片：哪里加速、哪里留白、每个角色要什么——一份完整的导演阐述' },
   { id: 3, name: '服化道', icon: 'fa-paint-brush', role: '服化道设计师', desc: '设计角色外观与场景气氛', color: '#c0907b', emoji: '🎨', tagline: '让世界观可见', avatar: 'designer',
-    cardDesc: '角色外观、服装材质、场景气氛、道具设计，可直接喂给生图 AI' },
+    cardDesc: '角色穿什么、场景什么光、道具什么质感——每条提示词都能直接对接 Midjourney 和 SD' },
   { id: 4, name: '音乐', icon: 'fa-music', role: '音乐总监', desc: '设计配乐方案与环境音', color: '#8b9e7b', emoji: '🎵', tagline: '耳朵里的情绪', avatar: 'music',
-    cardDesc: '曲风定调、BPM、情绪曲线、Suno 提示词，音乐总监一站式出方案' },
+    cardDesc: '画面还没拍，声音先到了。曲风、BPM、情绪曲线、Suno 提示词——电影配乐的完整创作简报' },
   { id: 5, name: '分镜', icon: 'fa-film', role: '分镜师', desc: '生成视频提示词与交付清单', color: '#9b7bb0', emoji: '🎥', tagline: '文字变成画面', avatar: 'storyboard',
-    cardDesc: '每个段落的视频提示词 + 故事板 + 交付清单，直接对接 Seedance/可灵/Runway' }
+    cardDesc: '编剧想的、导演要求的、服化道设计的——分镜师翻译成可灵/Seedance/Runway 直接执行的视频提示词' }
 ];
 
 const API_URL = 'https://ai-video-demo-psi.vercel.app/api/generate';
@@ -706,13 +841,14 @@ const state = {
   },
   config: {
     idea: '',
-    platform: '抖音',
+    platform: '抖音/快手',
     style: '电影感写实',
-    audience: '年轻女性',
+    audience: 'Z世代(18-25)',
     aspectRatio: '9:16',
+    reference: '',
     mode: 'idea' // 'idea' | 'script'
   },
-  effects: { fx: 'none', sound: 'none' }
+  effects: { fx: 'none', sound: 'none', musicStyle: 'none' }
 };
 
 // ===== DOM HELPERS =====
@@ -739,6 +875,7 @@ async function apiCall(action, extra = {}) {
     style: state.config.style,
     audience: state.config.audience,
     aspectRatio: state.config.aspectRatio,
+    reference: state.config.reference || '',
     ...extra
   };
   // For steps 3+, pass director output
@@ -810,6 +947,117 @@ function resetFromStage(n) {
   toast(`↩ 已回到步骤 ${n}（${STAGES[n-1].name}），后续资产已清除`);
 }
 
+// ===== PATH A/B SWITCHING =====
+
+function switchMode(mode) {
+  state.config.mode = mode;
+  const tabIdea = $('#tabIdea');
+  const tabScript = $('#tabScript');
+  const ideaArea = $('#ideaArea');
+  const scriptArea = $('#scriptArea');
+
+  if (mode === 'idea') {
+    tabIdea.className = 'flex-1 px-4 py-3 text-sm font-medium text-gold border-b-2 border-gold interactive';
+    tabScript.className = 'flex-1 px-4 py-3 text-sm text-mist border-b-2 border-transparent interactive hover:text-white';
+    ideaArea.classList.remove('hidden');
+    scriptArea.classList.add('hidden');
+  } else {
+    tabScript.className = 'flex-1 px-4 py-3 text-sm font-medium text-gold border-b-2 border-gold interactive';
+    tabIdea.className = 'flex-1 px-4 py-3 text-sm text-mist border-b-2 border-transparent interactive hover:text-white';
+    ideaArea.classList.add('hidden');
+    scriptArea.classList.remove('hidden');
+  }
+  updateStartButton();
+  renderStageCard();
+}
+
+function handleScriptFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    state.config.scriptContent = e.target.result;
+    showScriptStatus(file.name, state.config.scriptContent);
+  };
+  reader.readAsText(file);
+}
+
+function toggleScriptPaste() {
+  const area = $('#scriptPasteArea');
+  const btn = $('#pasteScriptBtn');
+  if (area.classList.contains('hidden')) {
+    area.classList.remove('hidden');
+    btn.innerHTML = '<i class="fa fa-clipboard mr-1"></i>收起';
+    area.focus();
+  } else {
+    area.classList.add('hidden');
+    btn.innerHTML = '<i class="fa fa-clipboard mr-1"></i>粘贴文本';
+  }
+}
+
+function updateScriptStatus() {
+  const status = $('#scriptStatus');
+  const span = status.querySelector('span');
+  const sc = state.config.scriptContent || '';
+  if (sc.trim()) {
+    status.classList.remove('hidden');
+    span.textContent = `已加载剧本（${sc.length} 字），将跳过编剧步骤直接从导演开始`;
+  } else {
+    status.classList.add('hidden');
+  }
+  updateStartButton();
+}
+
+function showScriptStatus(name, content) {
+  state.config.scriptContent = content;
+  const status = $('#scriptStatus');
+  const span = status.querySelector('span');
+  status.classList.remove('hidden');
+  span.textContent = `已加载：${name}（${content.length} 字），将跳过编剧直接从导演开始`;
+  updateStartButton();
+}
+
+function updateStartButton() {
+  const btn = $('#startWizardBtn');
+  if (state.config.mode === 'script' && !(state.config.scriptContent || '').trim()) {
+    btn.classList.add('opacity-50', 'pointer-events-none');
+  } else {
+    btn.classList.remove('opacity-50', 'pointer-events-none');
+  }
+}
+
+function startWizard() {
+  const sc = state.config.scriptContent || '';
+  if (state.config.mode === 'script' && !sc.trim()) {
+    toast('请先上传或粘贴剧本内容');
+    return;
+  }
+  if (state.config.mode === 'idea') {
+    const idea = $('#ideaInput').value.trim();
+    if (!idea) { toast('请输入你的视频想法'); return; }
+    state.config.idea = idea;
+  }
+  state.config.platform = $('#platformSelect').value;
+  state.config.style = $('#styleSelect').value;
+  state.config.audience = $('#audienceSelect').value;
+  state.config.aspectRatio = $('#aspectSelect').value;
+  state.config.reference = $('#referenceInput').value.trim();
+  for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; }
+  state.stages[1].status = 'active';
+  state.stage = 1;
+  updateAssets();
+  renderProgress();
+  renderAssetPanel();
+  if (state.config.mode === 'script' && sc.trim()) {
+    toast('已加载剧本，跳过编剧步骤。点击进度条上的"导演"开始。');
+    completeStage(1, { projectTitle: '（剧本模式）', segments: [{ text: sc }] });
+  } else {
+    renderStageCard();
+    $('#wizard').scrollIntoView({ behavior: 'smooth' });
+    toast('开始创作！输入想法后点击"生成段落"按钮');
+  }
+}
+
 // ===== RENDER: PROGRESS BAR =====
 function renderProgress() {
   const bar = $('#progressBar');
@@ -818,14 +1066,15 @@ function renderProgress() {
     const st = state.stages[s.id];
     let dotClass = 'border-white/15 text-mist/50';
     let lineClass = 'bg-white/8';
+    let lineGlow = '';
     if (st.status === 'active') dotClass = 'border-gold bg-gold/15 text-gold stage-active';
     if (st.status === 'done') { dotClass = 'border-green-500/60 bg-green-500/10 text-green-400'; lineClass = 'bg-green-500/30'; }
     if (st.status === 'error') dotClass = 'border-red-500/60 bg-red-500/10 text-red-400';
-    const icon = st.status === 'done' ? 'fa-check' : `fa-${s.icon}`;
+    const icon = st.status === 'done' ? 'fa-check' : '';
     html += `<div class="flex lg:flex-col items-center gap-0 shrink-0">`;
-    html += `<button onclick="handleProgressClick(${s.id})" class="shrink-0 flex lg:flex-col items-center gap-2 lg:gap-1 interactive ${st.status === 'active' ? 'cursor-default' : ''}" title="${s.name}">
-      <div class="flex h-9 w-9 items-center justify-center rounded-full border ${dotClass} text-xs relative z-10 bg-ink transition-all duration-500">
-        <i class="fa ${icon}"></i>
+    html += `<button onclick="handleProgressClick(${s.id})" class="shrink-0 flex lg:flex-col items-center gap-2 lg:gap-1 interactive ${st.status === 'active' ? 'cursor-default' : ''}" title="${s.role}: ${s.desc}">
+      <div class="flex h-10 w-10 lg:h-11 lg:w-11 items-center justify-center rounded-full border ${dotClass} text-xs relative z-10 bg-ink transition-all duration-500 overflow-hidden">
+        ${st.status === 'done' ? `<i class="fa fa-check text-[10px]"></i>` : `<div class="flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center">${AVATARS[s.avatar]}</div>`}
       </div>
       <span class="text-[10px] lg:text-[11px] ${st.status === 'active' ? 'text-gold' : st.status === 'done' ? 'text-green-400/70' : 'text-mist/50'}">${s.name}</span>
     </button>`;
@@ -857,18 +1106,25 @@ function renderStageCard() {
   // Loading state
   if (st.status === 'loading') {
     card.innerHTML = `
-      <div class="flex flex-col items-center justify-center min-h-[460px] md:min-h-[520px] text-center px-6">
-        <div class="relative mb-6">
-          <div class="skeleton-avatar h-20 w-20"></div>
-          <div class="absolute inset-0 rounded-full border-2 border-gold/30 stage-active"></div>
+      <div class="flex flex-col min-h-[460px] md:min-h-[520px] px-6 py-8 md:p-10">
+        <div class="flex items-start gap-4 mb-8">
+          <div class="skeleton-avatar h-16 w-16 shrink-0"></div>
+          <div class="flex-1 space-y-2 pt-1">
+            <div class="skeleton h-4 w-32"></div>
+            <div class="skeleton h-3 w-48"></div>
+          </div>
         </div>
-        <p class="text-lg font-semibold text-white mb-2">${s.role} 正在工作中...</p>
-        <p class="text-sm text-mist/60 mb-8" id="loadingHint">正在调用 AI 模型，请耐心等待</p>
-        <div class="space-y-3 w-full max-w-sm">
-          <div class="skeleton h-3 w-full"></div>
-          <div class="skeleton h-3 w-3/4"></div>
-          <div class="skeleton h-3 w-5/6"></div>
-          <div class="skeleton h-20 w-full mt-4"></div>
+        <div class="flex-1 space-y-4">
+          <div class="skeleton h-4 w-full" style="animation-delay:0s"></div>
+          <div class="skeleton h-4 w-full" style="animation-delay:.1s"></div>
+          <div class="skeleton h-4 w-3/4" style="animation-delay:.2s"></div>
+          <div class="skeleton h-4 w-5/6" style="animation-delay:.3s"></div>
+          <div class="skeleton h-4 w-full" style="animation-delay:.4s"></div>
+          <div class="skeleton h-4 w-2/3" style="animation-delay:.5s"></div>
+          <div class="skeleton h-24 w-full mt-6 rounded-xl" style="animation-delay:.3s"></div>
+        </div>
+        <div class="mt-6 flex items-center justify-center">
+          <p class="text-sm text-mist/50" id="loadingHint">${s.role} 正在思考中…</p>
         </div>
       </div>`;
     startLoadingHints();
@@ -881,31 +1137,31 @@ function renderStageCard() {
 
   if (state.stage === 1) {
     // Stage 1: Writer - show input or results
-    if (data && data.segments && data.segments.length) {
+    if (hasStageData(1, data)) {
       bodyHtml = renderSegmentsResult(data);
     } else {
       bodyHtml = renderWriterInput();
     }
   } else if (state.stage === 2) {
-    if (data && data.directorNotes) {
+    if (hasStageData(2, data)) {
       bodyHtml = renderDirectorResult(data);
     } else {
       bodyHtml = renderPlaceholder('导演将基于已确认的剧本段落做节拍分析', '确认编剧段落后，点下方按钮开始');
     }
   } else if (state.stage === 3) {
-    if (data && (data.characters || []).length) {
+    if (hasStageData(3, data)) {
       bodyHtml = renderDesignResult(data);
     } else {
       bodyHtml = renderPlaceholder('服化道设计师将为每个角色和场景设计视觉方案', '确认导演阐述后，点下方按钮开始');
     }
   } else if (state.stage === 4) {
-    if (data && data.musicDirection && data.musicDirection.genre) {
+    if (hasStageData(4, data)) {
       bodyHtml = renderMusicResult(data);
     } else {
       bodyHtml = renderPlaceholder('音乐总监将设计配乐方案和环境音', '确认角色场景后，点下方按钮开始');
     }
   } else if (state.stage === 5) {
-    if (data && (data.videoPrompts || []).length) {
+    if (hasStageData(5, data)) {
       bodyHtml = renderStoryboardResult(data);
     } else {
       bodyHtml = renderPlaceholder('分镜师将生成视频提示词和交付清单', '确认前面所有步骤后，点下方按钮生成最终交付包');
@@ -914,6 +1170,8 @@ function renderStageCard() {
 
   card.innerHTML = `
     <div class="stage-card-enter relative p-6 md:p-10 flex flex-col min-h-[460px] md:min-h-[520px]">
+      <!-- Done overlay glow -->
+      ${st.status === 'done' ? '<div class="absolute inset-0 rounded-[28px] done-glow pointer-events-none"></div>' : ''}
       <!-- Header with character avatar -->
       <div class="flex items-start gap-4 mb-6">
         <div class="relative shrink-0">
@@ -935,8 +1193,24 @@ function renderStageCard() {
       <div class="mt-6 flex flex-wrap items-center gap-3 pt-4 border-t border-white/6">
         ${buildFooterButtons(s.id, st)}
       </div>
+      <!-- Feedback row -->
+      <div id="feedbackRow${s.id}" class="hidden mt-3">
+        <textarea id="stageFeedbackInput${s.id}" class="w-full h-20 rounded-xl border border-white/10 bg-panelSoft p-3 text-xs text-white placeholder:text-mist/40 focus:border-gold/40 focus:outline-none resize-y" placeholder="哪些地方需要调整？例如：场景2色调太暗、主角性格不够鲜明、节奏太快、对话太啰嗦..."></textarea>
+      </div>
     </div>`;
   startTypewriterCycle();
+}
+
+function hasStageData(stageId, data) {
+  if (!data) return false;
+  const checks = {
+    1: d => d.segments?.length,
+    2: d => d.directorNotes,
+    3: d => d.characters?.length,
+    4: d => d.musicDirection?.genre,
+    5: d => d.videoPrompts?.length
+  };
+  return !!checks[stageId]?.(data);
 }
 
 function buildFooterButtons(stageId, st) {
@@ -947,15 +1221,17 @@ function buildFooterButtons(stageId, st) {
     return '<span class="text-xs text-mist">生成中，请稍候...</span>';
   }
 
+  const hasData = hasStageData(stageId, data);
+
   // Main action button
   if (stageId === 1) {
-    if (!data || !data.segments) {
+    if (!hasData) {
       btns += `<button onclick="runStage(1)" class="rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">✨ 开始编剧</button>`;
     } else {
       btns += `<button onclick="runStage(1)" class="rounded-full border border-gold/30 px-4 py-2 text-sm text-gold interactive hover:bg-gold/10"><i class="fa fa-refresh mr-1"></i> 重新生成</button>`;
     }
   } else {
-    if (!data || (stageId === 2 && !data.directorNotes) || (stageId === 3 && !(data.characters||[]).length) || (stageId === 4 && !data.musicDirection?.genre) || (stageId === 5 && !(data.videoPrompts||[]).length)) {
+    if (!hasData) {
       btns += `<button onclick="runStage(${stageId})" class="rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">🚀 生成${STAGES[stageId-1].name}内容</button>`;
     } else {
       btns += `<button onclick="runStage(${stageId})" class="rounded-full border border-gold/30 px-4 py-2 text-sm text-gold interactive hover:bg-gold/10"><i class="fa fa-refresh mr-1"></i> 重新生成</button>`;
@@ -963,12 +1239,19 @@ function buildFooterButtons(stageId, st) {
   }
 
   // Approve & Next button (when data exists and not last stage)
-  if (data && ((stageId===1&&data.segments?.length) || (stageId===2&&data.directorNotes) || (stageId===3&&data.characters?.length) || (stageId===4&&data.musicDirection?.genre))) {
+  if (hasData && stageId < 5) {
     btns += `<button onclick="approveAndNext(${stageId})" class="rounded-full bg-white/5 border border-white/10 px-5 py-2.5 text-sm text-white interactive hover:bg-white/10">确认并进入下一步 →</button>`;
   }
 
+  // Feedback toggle (when data exists)
+  if (hasData) {
+    btns += `<button onclick="toggleFeedback(${stageId})" class="text-xs text-mist/50 interactive hover:text-gold/70 ml-auto">
+      <i class="fa fa-commenting-o mr-1"></i>修改意见
+    </button>`;
+  }
+
   // Final stage: export
-  if (stageId === 5 && data && data.videoPrompts?.length) {
+  if (stageId === 5 && hasData) {
     btns += `<button onclick="showExport()" class="rounded-full bg-gold px-5 py-2.5 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">📦 导出完整项目</button>`;
   }
 
@@ -985,6 +1268,7 @@ const LOADING_HINTS = [
   '正在调用 AI 模型，请耐心等待',
   '深度思考中，复杂内容需要更多时间...',
   'AI 正在仔细推敲每个细节',
+  '就像好电影需要时间，好内容也一样',
   '马上就好，精彩内容值得等待',
   '正在润色输出，确保专业品质'
 ];
@@ -1133,35 +1417,56 @@ function renderWriterInput() {
         <p id="scriptStatus" class="text-xs text-mist/60 self-center"></p>
       </div>` : `
       <div class="space-y-3">
-        <p class="text-sm text-mist">编写剧将根据你的想法，拆解出 3-4 个叙事段落。每个段落包含叙事目标、涉及角色、场景描述。</p>
+        <p class="text-sm text-mist">编剧将基于你的想法，拆解出 3-4 个叙事段落。每个段落包含叙事目标、涉及角色、场景描述。</p>
         <div class="rounded-xl border border-white/6 bg-white/[0.02] p-4">
           <p class="text-xs text-mist/60 mb-1">当前想法</p>
           <p class="text-sm text-white" id="currentIdeaPreview">${state.config.idea||'（请在上方输入框填写）'}</p>
         </div>
+        <!-- Creative interview / detail supplement -->
+        <details class="group rounded-xl border border-white/6 bg-white/[0.01] overflow-hidden">
+          <summary class="px-4 py-3 text-xs text-mist/60 cursor-pointer interactive hover:text-mist/80 select-none">
+            <i class="fa fa-comments-o mr-1.5 text-gold/60"></i>编剧想了解更多细节（可选展开补充）
+            <span class="text-[10px] text-gold/40 ml-2">写得越多，AI 理解越准</span>
+          </summary>
+          <div class="px-4 pb-4 pt-1">
+            <textarea id="writerDetailInput" class="w-full h-28 rounded-xl border border-white/10 bg-panelSoft p-3 text-sm text-white placeholder:text-mist/40 focus:border-gold/40 focus:outline-none resize-y" placeholder="帮编剧更好地理解你的想法：&#10;&#10;• 主角是什么样的性格？外貌特征？&#10;• 故事发生在什么年代/城市/环境？&#10;• 你希望观众看完有什么感觉？&#10;• 有没有特别想出现的场景或道具？&#10;• 不想要什么？（拒绝哪些套路或风格）"></textarea>
+          </div>
+        </details>
       </div>`}
   `;
 }
 
 function renderPlaceholder(title, subtitle) {
+  // Film-themed empty state icons per stage
+  const stageIcons = {
+    2: { icon: 'fa-video-camera', color: '#7b9fc0' },
+    3: { icon: 'fa-paint-brush', color: '#c0907b' },
+    4: { icon: 'fa-music', color: '#8b9e7b' },
+    5: { icon: 'fa-film', color: '#9b7bb0' }
+  };
+  const si = stageIcons[state.stage] || { icon: 'fa-clapperboard', color: '#b8945f' };
+  // Fallback for fa-clapperboard (not in FontAwesome 4.7): use fa-film
+  const iconClass = si.icon === 'fa-clapperboard' ? 'fa-video-camera' : si.icon;
   return `<div class="flex flex-col items-center justify-center flex-1 text-center py-12">
-    <div class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/8 bg-white/[0.02] mb-4"><i class="fa fa-inbox text-2xl text-mist/40"></i></div>
-    <p class="text-sm font-medium text-white mb-1">${title}</p><p class="text-xs text-mist/60">${subtitle}</p>
+    <div class="relative mb-6">
+      <div class="flex h-20 w-20 items-center justify-center rounded-2xl" style="background:${si.color}08; border:2px solid ${si.color}18">
+        <i class="fa ${iconClass} text-3xl" style="color:${si.color}55"></i>
+      </div>
+      <div class="absolute inset-0 rounded-2xl" style="box-shadow:0 0 40px ${si.color}08"></div>
+    </div>
+    <p class="text-sm font-medium text-white mb-1.5">${title}</p>
+    <p class="text-xs text-mist/50 max-w-[260px]">${subtitle}</p>
   </div>`;
 }
 
 // ===== ACTIONS =====
-function switchMode(mode) {
-  state.config.mode = mode;
-  renderStageCard();
-}
-
 function handleScriptUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
-    document.getElementById('scriptInput').value = e.target.result;
-    document.getElementById('scriptStatus').textContent = `✓ ${file.name}`;
+    $('#scriptInput').value = e.target.result;
+    $('#scriptStatus').textContent = `✓ ${file.name}`;
   };
   reader.readAsText(file);
 }
@@ -1177,9 +1482,9 @@ async function runStage(n) {
 
     // For script mode in stage 1, use script content as idea
     if (n === 1 && cfg.mode === 'script') {
-      const scriptContent = document.getElementById('scriptInput')?.value?.trim();
-      if (!scriptContent) { toast('请粘贴或上传剧本'); st.status = 'active'; renderStageCard(); return; }
-      cfg.idea = scriptContent;
+      const sc = $('#scriptInput')?.value?.trim();
+      if (!sc) { toast('请粘贴或上传剧本'); st.status = 'active'; renderStageCard(); return; }
+      cfg.idea = sc;
     } else {
       // Sync config from inputs
       cfg.idea = $('#ideaInput').value.trim() || cfg.idea;
@@ -1189,9 +1494,27 @@ async function runStage(n) {
       cfg.aspectRatio = $('#aspectSelect').value;
     }
 
+    // Append writer detail input for stage 1 (creative interview)
+    if (n === 1) {
+      const detailEl = $('#writerDetailInput');
+      if (detailEl && detailEl.value.trim()) {
+        cfg.idea = cfg.idea + '\n\n【补充创作细节】\n' + detailEl.value.trim();
+      }
+    }
+
     if (!cfg.idea) { toast('请先输入视频想法'); st.status = 'active'; renderStageCard(); return; }
 
     const extra = { segments: state.stages[1].data?.segments || [] };
+
+    // Read feedback if user provided modification notes
+    const feedbackEl = $('#stageFeedbackInput' + n);
+    if (feedbackEl && feedbackEl.value.trim()) {
+      extra.feedback = feedbackEl.value.trim();
+      feedbackEl.value = '';
+      const feedbackRow = $('#feedbackRow' + n);
+      if (feedbackRow) feedbackRow.classList.add('hidden');
+    }
+
     result = await apiCall(
       n === 1 ? 'write' : n === 2 ? 'direct' : n === 3 ? 'design' : n === 4 ? 'music' : 'storyboard',
       extra
@@ -1203,6 +1526,11 @@ async function runStage(n) {
     const stgName = STAGES[n-1].name;
     toast(`❌ ${stgName}生成失败：${err.message}`);
   }
+}
+
+function toggleFeedback(stageId) {
+  const row = $('#feedbackRow' + stageId);
+  if (row) row.classList.toggle('hidden');
 }
 
 function approveAndNext(n) {
@@ -1250,11 +1578,12 @@ function renderAssetPanel() {
   if (!assets.length) {
     list.innerHTML = `
       <div class="px-4 py-10 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-full border border-white/8 bg-white/[0.02] mx-auto mb-4">
-          <i class="fa fa-inbox text-xl text-mist/30"></i>
+        <div class="flex h-14 w-14 items-center justify-center rounded-xl mx-auto mb-4" style="background:rgba(184,148,95,.06); border:1px solid rgba(184,148,95,.12)">
+          <i class="fa fa-clipboard text-xl" style="color:rgba(184,148,95,.35)"></i>
         </div>
-        <p class="text-sm text-mist/50">完成编剧后将</p>
-        <p class="text-sm text-mist/50">自动产出设计资产</p>
+        <p class="text-sm text-white/70 font-medium">制片资产将在此呈现</p>
+        <p class="text-xs text-mist/40 mt-1.5">完成编剧后，段落、角色、场景等</p>
+        <p class="text-xs text-mist/40">设计资产会自动整理到这里</p>
       </div>`;
     count.textContent = '0 项';
     return;
@@ -1444,7 +1773,6 @@ function cycleFX() {
 // ===== WEB AUDIO AMBIENT SOUND ENGINE =====
 let audioCtx = null;
 let soundNodes = [];
-let soundType = 'none';
 
 async function initAudio() {
   if (!audioCtx) {
@@ -1570,7 +1898,7 @@ function startForestSound() {
   soundNodes.push(lfo);
   // Layer 3: Occasional bird-like tones
   function chirp() {
-    if (soundType !== 'forest') return;
+    if (state.effects.sound !== 'forest') return;
     const osc = audioCtx.createOscillator();
     osc.type = 'sine';
     osc.frequency.value = 1800 + Math.random() * 2000;
@@ -1587,29 +1915,105 @@ function startForestSound() {
   chirp();
 }
 
+function startWavesSound() {
+  stopAllSounds();
+  // Layered noise modulated for wave rhythm
+  const { gainNode: g1 } = createNoiseNode(2, 0.08);
+  const lp1 = audioCtx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp1.frequency.value = 800;
+  g1.disconnect();
+  g1.connect(lp1);
+  lp1.connect(audioCtx.destination);
+  // LFO for wave swell
+  const lfo = audioCtx.createOscillator();
+  lfo.frequency.value = 0.08;
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 0.06;
+  lfo.connect(lfoGain);
+  lfoGain.connect(g1.gain);
+  lfo.start();
+  soundNodes.push(lfo);
+}
+
+function startCampfireSound() {
+  stopAllSounds();
+  // Crackling fire: high-freq noise with sharp modulation
+  const { gainNode: g1 } = createNoiseNode(1.5, 0.05);
+  const bp1 = audioCtx.createBiquadFilter();
+  bp1.type = 'bandpass';
+  bp1.frequency.value = 3000;
+  bp1.Q.value = 0.5;
+  g1.disconnect();
+  g1.connect(bp1);
+  bp1.connect(audioCtx.destination);
+  // Random crackle pops
+  function crackle() {
+    if (state.effects.sound !== 'campfire') return;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08 * Math.random(), audioCtx.currentTime + 0.02);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1 + Math.random() * 0.2);
+    gain.connect(audioCtx.destination);
+    const osc = audioCtx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = 200 + Math.random() * 600;
+    osc.connect(gain);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.3);
+    setTimeout(crackle, 200 + Math.random() * 1200);
+  }
+  crackle();
+}
+
+function startTypingSound() {
+  stopAllSounds();
+  // Gentle keystroke rhythm
+  function keystroke() {
+    if (state.effects.sound !== 'typing') return;
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = 400 + Math.random() * 300;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.01);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.06);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.08);
+    // Variable pace for natural feel
+    const nextDelay = 60 + Math.random() * 250 + (Math.random() > 0.85 ? 400 : 0);
+    setTimeout(keystroke, nextDelay);
+  }
+  keystroke();
+}
+
+const SOUND_STARTERS = {
+  rain: startRainSound, cafe: startCafeSound, forest: startForestSound,
+  waves: startWavesSound, campfire: startCampfireSound, typing: startTypingSound
+};
+
 function startAmbientSound(type) {
-  soundType = type;
+  state.effects.sound = type;
   initAudio().then(() => {
-    if (type === 'rain') startRainSound();
-    else if (type === 'cafe') startCafeSound();
-    else if (type === 'forest') startForestSound();
+    SOUND_STARTERS[type]?.();
   });
 }
 
 // ===== SOUND TOGGLE =====
 function cycleSound() {
-  const sounds = ['none', 'rain', 'cafe', 'forest'];
+  const sounds = ['none', 'rain', 'cafe', 'forest', 'waves', 'campfire', 'typing'];
   const current = sounds.indexOf(state.effects.sound);
   const next = sounds[(current + 1) % sounds.length];
   state.effects.sound = next;
-  const icons = { none: '🔇', rain: '🌧️🔊', cafe: '☕🔊', forest: '🌿🔊' };
-  const labels = { none: '无白噪音', rain: '下雨', cafe: '咖啡馆', forest: '森林' };
+  const icons = { none: '🔇', rain: '🌧️', cafe: '☕', forest: '🌿', waves: '🌊', campfire: '🔥', typing: '⌨️' };
+  const labels = { none: '无白噪音', rain: '雨声', cafe: '咖啡馆', forest: '森林', waves: '海浪', campfire: '篝火', typing: '打字机' };
   $('#soundToggle').textContent = icons[next];
   $('#soundToggle').title = labels[next];
 
   if (next === 'none') {
     stopAllSounds();
-    soundType = 'none';
     toast('白噪音已关闭');
   } else {
     startAmbientSound(next);
@@ -1660,12 +2064,18 @@ function scheduleNextNote() {
   musicTimeout = setTimeout(scheduleNextNote, 800 + Math.random() * 2200);
 }
 
+function stopAmbientIfPlaying() {
+  if (state.effects.sound !== 'none') {
+    stopAllSounds();
+    state.effects.sound = 'none';
+    $('#soundToggle').textContent = '🔇';
+  }
+}
+
 function startCinematicMusic() {
   initAudio().then(() => {
     stopMusic();
-    stopAllSounds();
-    soundType = 'none';
-
+    stopAmbientIfPlaying();
     const osc1 = audioCtx.createOscillator();
     osc1.type = 'sine';
     osc1.frequency.value = 55;
@@ -1675,7 +2085,6 @@ function startCinematicMusic() {
     g1.connect(audioCtx.destination);
     osc1.start();
     musicNodes.push(osc1);
-
     const osc2 = audioCtx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.value = 65.41;
@@ -1685,7 +2094,6 @@ function startCinematicMusic() {
     g2.connect(audioCtx.destination);
     osc2.start();
     musicNodes.push(osc2);
-
     const osc3 = audioCtx.createOscillator();
     osc3.type = 'sine';
     osc3.frequency.value = 261.63;
@@ -1702,23 +2110,167 @@ function startCinematicMusic() {
     g3.connect(audioCtx.destination);
     osc3.start();
     musicNodes.push(osc3, lfo);
-
     scheduleNextNote();
   });
 }
 
-function toggleMusic() {
-  if (musicNodes.length) {
+function startElectronicMusic() {
+  initAudio().then(() => {
     stopMusic();
-    $('#musicToggle').textContent = '🎼';
-    $('#musicToggle').title = '氛围音乐';
+    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    // Deep bass drone
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc1.frequency.value = 41.2;
+    const g1 = audioCtx.createGain();
+    g1.gain.value = 0.02;
+    const lp1 = audioCtx.createBiquadFilter();
+    lp1.type = 'lowpass';
+    lp1.frequency.value = 200;
+    osc1.connect(g1);
+    g1.connect(lp1);
+    lp1.connect(audioCtx.destination);
+    osc1.start();
+    musicNodes.push(osc1);
+    // Pad chord
+    [130.81, 196.00, 261.63].forEach(f => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = f;
+      const g = audioCtx.createGain();
+      g.gain.value = 0.015;
+      const lfo2 = audioCtx.createOscillator();
+      lfo2.frequency.value = 0.2 + Math.random() * 0.1;
+      const lfoG2 = audioCtx.createGain();
+      lfoG2.gain.value = 0.01;
+      lfo2.connect(lfoG2);
+      lfoG2.connect(g.gain);
+      lfo2.start();
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start();
+      musicNodes.push(osc, lfo2);
+    });
+    scheduleNextNoteElectronic();
+  });
+}
+
+function scheduleNextNoteElectronic() {
+  if (!musicNodes.length) return;
+  const now = audioCtx.currentTime;
+  const freqs = [65.41, 98.00, 130.81, 196.00, 261.63, 329.63, 392.00, 523.25];
+  const freq = freqs[Math.floor(Math.random() * freqs.length)];
+  const dur = 1.5 + Math.random() * 3;
+  const gain = 0.015 + Math.random() * 0.03;
+  playNote(freq, now + 0.05, dur, gain, 'sawtooth');
+  musicTimeout = setTimeout(scheduleNextNoteElectronic, 600 + Math.random() * 2500);
+}
+
+function startJazzMusic() {
+  initAudio().then(() => {
+    stopMusic();
+    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    // Warm upright bass feel
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'triangle';
+    osc1.frequency.value = 55;
+    const g1 = audioCtx.createGain();
+    g1.gain.value = 0.025;
+    const lp1 = audioCtx.createBiquadFilter();
+    lp1.type = 'lowpass';
+    lp1.frequency.value = 400;
+    osc1.connect(g1);
+    g1.connect(lp1);
+    lp1.connect(audioCtx.destination);
+    osc1.start();
+    musicNodes.push(osc1);
+    // Soft brush snare texture via filtered noise
+    const { gainNode: gn } = createNoiseNode(1, 0.015);
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 3000;
+    gn.disconnect();
+    gn.connect(hp);
+    hp.connect(audioCtx.destination);
+    scheduleNextNoteJazz();
+  });
+}
+
+function scheduleNextNoteJazz() {
+  if (!musicNodes.length) return;
+  const now = audioCtx.currentTime;
+  const chordTones = [130.81, 164.81, 196.00, 220.00, 261.63, 329.63, 349.23, 392.00, 440.00, 523.25];
+  const freq = chordTones[Math.floor(Math.random() * chordTones.length)];
+  const dur = 0.8 + Math.random() * 2;
+  const gain = 0.02 + Math.random() * 0.03;
+  playNote(freq, now + 0.1, dur, gain, 'triangle');
+  musicTimeout = setTimeout(scheduleNextNoteJazz, 500 + Math.random() * 1800);
+}
+
+function startAncientMusic() {
+  initAudio().then(() => {
+    stopMusic();
+    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    // Pentatonic drone - guqin-like
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = 73.42; // D2
+    const g1 = audioCtx.createGain();
+    g1.gain.value = 0.03;
+    osc1.connect(g1);
+    g1.connect(audioCtx.destination);
+    osc1.start();
+    musicNodes.push(osc1);
+    // Slow vibrato on high D
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 587.33;
+    const g2 = audioCtx.createGain();
+    g2.gain.value = 0.01;
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.08;
+    const lfoG = audioCtx.createGain();
+    lfoG.gain.value = 0.005;
+    lfo.connect(lfoG);
+    lfoG.connect(g2.gain);
+    lfo.start();
+    osc2.connect(g2);
+    g2.connect(audioCtx.destination);
+    osc2.start();
+    musicNodes.push(osc2, lfo);
+    scheduleNextNoteAncient();
+  });
+}
+
+function scheduleNextNoteAncient() {
+  if (!musicNodes.length) return;
+  const now = audioCtx.currentTime;
+  const pentatonicD = [73.42, 82.41, 110.00, 123.47, 146.83, 164.81, 220.00, 246.94, 293.66, 329.63, 440.00, 493.88, 587.33, 659.25, 880.00];
+  const freq = pentatonicD[Math.floor(Math.random() * pentatonicD.length)];
+  const dur = 2 + Math.random() * 3.5;
+  const gain = 0.015 + Math.random() * 0.025;
+  playNote(freq, now + 0.2, dur, gain, 'sine');
+  musicTimeout = setTimeout(scheduleNextNoteAncient, 1200 + Math.random() * 3000);
+}
+
+function cycleMusic() {
+  const styles = ['none', 'cinematic', 'electronic', 'jazz', 'ancient'];
+  const current = styles.indexOf(state.effects.musicStyle);
+  const next = styles[(current + 1) % styles.length];
+  state.effects.musicStyle = next;
+  const icons = { none: '🎼', cinematic: '🎻', electronic: '🎹', jazz: '🎷', ancient: '🪈' };
+  const labels = { none: '氛围音乐·关', cinematic: '电影管弦', electronic: '电子氛围', jazz: '爵士钢琴', ancient: '古风琴箫' };
+  $('#musicToggle').textContent = icons[next];
+  $('#musicToggle').title = `氛围音乐: ${labels[next]}`;
+
+  stopMusic();
+  if (next === 'none') {
     toast('氛围音乐已关闭');
-  } else {
-    startCinematicMusic();
-    $('#musicToggle').textContent = '🎼✨';
-    $('#musicToggle').title = '关闭氛围音乐';
-    toast('🎵 电影感氛围音乐');
+    return;
   }
+  const musicStarters = { cinematic: startCinematicMusic, electronic: startElectronicMusic, jazz: startJazzMusic, ancient: startAncientMusic };
+  musicStarters[next]?.();
+  toast(`🎵 ${labels[next]}`);
 }
 
 // ===== RESET =====
@@ -1752,7 +2304,7 @@ $$('.faq-toggle').forEach(btn => {
 // ===== EVENT BINDINGS =====
 $('#fxToggle').addEventListener('click', cycleFX);
 $('#soundToggle').addEventListener('click', cycleSound);
-$('#musicToggle').addEventListener('click', toggleMusic);
+$('#musicToggle').addEventListener('click', cycleMusic);
 $('#hamburgerBtn').addEventListener('click', () => {
   $('#mobileNavDrawer').classList.add('open');
   $('#mobileNavOverlay').classList.add('open');
@@ -1763,6 +2315,10 @@ function closeMobileNav() {
 }
 $('#resetProjectBtn').addEventListener('click', resetProject);
 $('#exportBtn').addEventListener('click', showExport);
+$('#scriptPasteArea').addEventListener('input', function() {
+  state.config.scriptContent = this.value;
+  updateScriptStatus();
+});
 
 // ESC key to close modals
 document.addEventListener('keydown', (e) => {
@@ -1834,6 +2390,13 @@ function renderWorkflowCards() {
 
   revealSections.forEach(section => observer.observe(section));
 })();
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 's' || e.key === 'S') { e.preventDefault(); cycleSound(); }
+  if (e.key === 'm' || e.key === 'M') { e.preventDefault(); cycleMusic(); }
+});
 </script>
 </body>
 </html>
