@@ -904,6 +904,7 @@ async function apiCall(action, extra = {}) {
 
 // ===== STAGE MANAGEMENT =====
 function setStage(n) {
+  if (n === state.stage) return;
   state.stage = n;
   // Update statuses
   for (let i = 1; i <= 5; i++) {
@@ -1046,12 +1047,12 @@ function startWizard() {
   state.stages[1].status = 'active';
   state.stage = 1;
   updateAssets();
-  renderProgress();
-  renderAssetPanel();
   if (state.config.mode === 'script' && sc.trim()) {
     toast('已加载剧本，跳过编剧步骤。点击进度条上的"导演"开始。');
     completeStage(1, { projectTitle: '（剧本模式）', segments: [{ text: sc }] });
   } else {
+    renderProgress();
+    renderAssetPanel();
     renderStageCard();
     $('#wizard').scrollIntoView({ behavior: 'smooth' });
     toast('开始创作！输入想法后点击"生成段落"按钮');
@@ -1066,7 +1067,6 @@ function renderProgress() {
     const st = state.stages[s.id];
     let dotClass = 'border-white/15 text-mist/50';
     let lineClass = 'bg-white/8';
-    let lineGlow = '';
     if (st.status === 'active') dotClass = 'border-gold bg-gold/15 text-gold stage-active';
     if (st.status === 'done') { dotClass = 'border-green-500/60 bg-green-500/10 text-green-400'; lineClass = 'bg-green-500/30'; }
     if (st.status === 'error') dotClass = 'border-red-500/60 bg-red-500/10 text-red-400';
@@ -1437,22 +1437,16 @@ function renderWriterInput() {
 }
 
 function renderPlaceholder(title, subtitle) {
-  // Film-themed empty state icons per stage
-  const stageIcons = {
-    2: { icon: 'fa-video-camera', color: '#7b9fc0' },
-    3: { icon: 'fa-paint-brush', color: '#c0907b' },
-    4: { icon: 'fa-music', color: '#8b9e7b' },
-    5: { icon: 'fa-film', color: '#9b7bb0' }
-  };
-  const si = stageIcons[state.stage] || { icon: 'fa-clapperboard', color: '#b8945f' };
-  // Fallback for fa-clapperboard (not in FontAwesome 4.7): use fa-film
-  const iconClass = si.icon === 'fa-clapperboard' ? 'fa-video-camera' : si.icon;
+  // Use stage's registered icon and color from STAGES array
+  const s = state.stage >= 2 ? STAGES[state.stage - 1] : null;
+  const iconClass = s ? s.icon : 'fa-video-camera';
+  const iconColor = s ? s.color : '#b8945f';
   return `<div class="flex flex-col items-center justify-center flex-1 text-center py-12">
     <div class="relative mb-6">
-      <div class="flex h-20 w-20 items-center justify-center rounded-2xl" style="background:${si.color}08; border:2px solid ${si.color}18">
-        <i class="fa ${iconClass} text-3xl" style="color:${si.color}55"></i>
+      <div class="flex h-20 w-20 items-center justify-center rounded-2xl" style="background:${iconColor}08; border:2px solid ${iconColor}18">
+        <i class="fa ${iconClass} text-3xl" style="color:${iconColor}55"></i>
       </div>
-      <div class="absolute inset-0 rounded-2xl" style="box-shadow:0 0 40px ${si.color}08"></div>
+      <div class="absolute inset-0 rounded-2xl" style="box-shadow:0 0 40px ${iconColor}08"></div>
     </div>
     <p class="text-sm font-medium text-white mb-1.5">${title}</p>
     <p class="text-xs text-mist/50 max-w-[260px]">${subtitle}</p>
@@ -1910,6 +1904,8 @@ function startForestSound() {
     g.connect(audioCtx.destination);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.3);
+    soundNodes.push(g);
+    setTimeout(() => { const idx = soundNodes.indexOf(g); if (idx >= 0) soundNodes.splice(idx, 1); }, 350);
     setTimeout(chirp, 2000 + Math.random() * 6000);
   }
   chirp();
@@ -1961,6 +1957,8 @@ function startCampfireSound() {
     osc.connect(gain);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.3);
+    soundNodes.push(gain);
+    setTimeout(() => { const idx = soundNodes.indexOf(gain); if (idx >= 0) soundNodes.splice(idx, 1); }, 350);
     setTimeout(crackle, 200 + Math.random() * 1200);
   }
   crackle();
@@ -1982,7 +1980,8 @@ function startTypingSound() {
     g.connect(audioCtx.destination);
     osc.start(audioCtx.currentTime);
     osc.stop(audioCtx.currentTime + 0.08);
-    // Variable pace for natural feel
+    soundNodes.push(g);
+    setTimeout(() => { const idx = soundNodes.indexOf(g); if (idx >= 0) soundNodes.splice(idx, 1); }, 100);
     const nextDelay = 60 + Math.random() * 250 + (Math.random() > 0.85 ? 400 : 0);
     setTimeout(keystroke, nextDelay);
   }
@@ -2117,7 +2116,7 @@ function startCinematicMusic() {
 function startElectronicMusic() {
   initAudio().then(() => {
     stopMusic();
-    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    stopAmbientIfPlaying();
     // Deep bass drone
     const osc1 = audioCtx.createOscillator();
     osc1.type = 'sawtooth';
@@ -2169,7 +2168,7 @@ function scheduleNextNoteElectronic() {
 function startJazzMusic() {
   initAudio().then(() => {
     stopMusic();
-    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    stopAmbientIfPlaying();
     // Warm upright bass feel
     const osc1 = audioCtx.createOscillator();
     osc1.type = 'triangle';
@@ -2210,7 +2209,7 @@ function scheduleNextNoteJazz() {
 function startAncientMusic() {
   initAudio().then(() => {
     stopMusic();
-    if (state.effects.sound !== 'none') { stopAllSounds(); state.effects.sound = 'none'; $('#soundToggle').textContent = '🔇'; }
+    stopAmbientIfPlaying();
     // Pentatonic drone - guqin-like
     const osc1 = audioCtx.createOscillator();
     osc1.type = 'sine';
