@@ -1321,16 +1321,180 @@ function cycleFX() {
   setFX(next);
 }
 
-// ===== SOUND =====
+// ===== WEB AUDIO AMBIENT SOUND ENGINE =====
+let audioCtx = null;
+let soundNodes = [];
+let soundType = 'none';
+
+async function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+}
+
+function stopAllSounds() {
+  soundNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  soundNodes = [];
+}
+
+function createNoiseNode(duration = 2, gain = 0.08) {
+  const bufferSize = audioCtx.sampleRate * duration;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.value = gain;
+  source.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  source.start();
+  soundNodes.push(source);
+  return { source, gainNode };
+}
+
+function startRainSound() {
+  stopAllSounds();
+  // Layer 1: Main rain (filtered white noise)
+  const { gainNode: g1 } = createNoiseNode(2, 0.12);
+  const lp1 = audioCtx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp1.frequency.value = 1800;
+  lp1.Q.value = 0.5;
+  g1.disconnect();
+  g1.connect(lp1);
+  lp1.connect(audioCtx.destination);
+  soundNodes.push(g1);
+  // Layer 2: Distant rain rumble
+  const { gainNode: g2 } = createNoiseNode(3, 0.05);
+  const lp2 = audioCtx.createBiquadFilter();
+  lp2.type = 'lowpass';
+  lp2.frequency.value = 400;
+  g2.disconnect();
+  g2.connect(lp2);
+  lp2.connect(audioCtx.destination);
+  // Layer 3: Individual drops (occasional pops)
+  const dropGain = audioCtx.createGain();
+  dropGain.gain.value = 0.06;
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 2000;
+  const { gainNode: g3 } = createNoiseNode(0.3, 0.15);
+  g3.disconnect();
+  g3.connect(hp);
+  hp.connect(dropGain);
+  dropGain.connect(audioCtx.destination);
+  // Modulate drop volume for random patter
+  const lfo = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = 3;
+  lfo.type = 'sawtooth';
+  lfoGain.gain.value = 1;
+  lfo.connect(lfoGain);
+  lfoGain.connect(dropGain.gain);
+  lfo.start();
+  soundNodes.push(lfo, g3);
+}
+
+function startCafeSound() {
+  stopAllSounds();
+  // Layer 1: Low murmur
+  const { gainNode: g1 } = createNoiseNode(2, 0.06);
+  const lp1 = audioCtx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp1.frequency.value = 600;
+  g1.disconnect();
+  g1.connect(lp1);
+  lp1.connect(audioCtx.destination);
+  // Layer 2: Mid-range chatter hint
+  const { gainNode: g2 } = createNoiseNode(1.7, 0.04);
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 900;
+  bp.Q.value = 0.8;
+  g2.disconnect();
+  g2.connect(bp);
+  bp.connect(audioCtx.destination);
+  // Layer 3: Subtle warm hum
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 55;
+  const oscGain = audioCtx.createGain();
+  oscGain.gain.value = 0.02;
+  osc.connect(oscGain);
+  oscGain.connect(audioCtx.destination);
+  osc.start();
+  soundNodes.push(osc, g2);
+}
+
+function startForestSound() {
+  stopAllSounds();
+  // Layer 1: Soft wind through leaves
+  const { gainNode: g1 } = createNoiseNode(3, 0.07);
+  const lp1 = audioCtx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp1.frequency.value = 2500;
+  g1.disconnect();
+  g1.connect(lp1);
+  lp1.connect(audioCtx.destination);
+  // Layer 2: Distant breeze modulation
+  const lfo = audioCtx.createOscillator();
+  lfo.frequency.value = 0.15;
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = 0.02;
+  lfo.connect(lfoGain);
+  lfoGain.connect(g1.gain);
+  lfo.start();
+  soundNodes.push(lfo);
+  // Layer 3: Occasional bird-like tones
+  function chirp() {
+    if (soundType !== 'forest') return;
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 1800 + Math.random() * 2000;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.25);
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.3);
+    setTimeout(chirp, 2000 + Math.random() * 6000);
+  }
+  chirp();
+}
+
+function startAmbientSound(type) {
+  soundType = type;
+  initAudio().then(() => {
+    if (type === 'rain') startRainSound();
+    else if (type === 'cafe') startCafeSound();
+    else if (type === 'forest') startForestSound();
+  });
+}
+
+// ===== SOUND TOGGLE =====
 function cycleSound() {
   const sounds = ['none', 'rain', 'cafe', 'forest'];
   const current = sounds.indexOf(state.effects.sound);
   const next = sounds[(current + 1) % sounds.length];
   state.effects.sound = next;
   const icons = { none: '🔇', rain: '🌧️🔊', cafe: '☕🔊', forest: '🌿🔊' };
+  const labels = { none: '无白噪音', rain: '下雨', cafe: '咖啡馆', forest: '森林' };
   $('#soundToggle').textContent = icons[next];
-  $('#soundToggle').title = next === 'none' ? '无白噪音' : `白噪音: ${next}`;
-  toast(next === 'none' ? '白噪音已关闭' : `白噪音: ${next}（浏览器限制，需用户交互后播放）`);
+  $('#soundToggle').title = labels[next];
+
+  if (next === 'none') {
+    stopAllSounds();
+    soundType = 'none';
+    toast('白噪音已关闭');
+  } else {
+    startAmbientSound(next);
+    toast(`🎧 ${labels[next]} 环境音`);
+  }
 }
 
 // ===== RESET =====
