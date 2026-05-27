@@ -829,6 +829,7 @@
       <p class="text-sm font-semibold text-white mb-4">📦 导出项目包</p>
       <div id="exportContent" class="space-y-2 text-sm text-mist"></div>
       <div class="mt-5 flex gap-3 justify-end">
+        <button onclick="downloadExport()" class="rounded-full bg-gold px-4 py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]"><i class="fa fa-download mr-1"></i>下载 .md</button>
         <button onclick="closeExport()" class="rounded-full border border-white/10 px-4 py-2 text-sm text-mist interactive hover:text-white">关闭</button>
       </div>
     </div>
@@ -1947,19 +1948,49 @@ function showExport() {
   if (!assets.length) {
     content.innerHTML = '<p class="text-mist/60">暂无资产。请至少完成编剧步骤。</p>';
   } else {
-    let html = '';
+    // Build Markdown
+    let md = '';
+    const config = state.config;
+    md += `# AI视频导演台 · 项目导出\n\n`;
+    md += `> 创作时间：${new Date().toLocaleDateString('zh-CN')}\n`;
+    md += `> 平台：${config.platform || ''} | 风格：${config.style || ''} | 画幅：${config.aspectRatio || ''}\n`;
+    md += `> 模式：${config.mode === 'script' ? '已有剧本' : '从想法出发'}\n`;
+    if (config.idea && config.mode !== 'script') md += `> 原始想法：${config.idea.slice(0, 100)}\n`;
+    md += `\n---\n\n`;
+
     assets.forEach(a => {
-      html += `<div class="flex items-center justify-between py-2 border-b border-white/4"><span><i class="fa ${a.icon} mr-2 text-gold/70"></i>${a.type}</span><span class="text-xs text-mist/60">${a.items.length} 项</span></div>`;
-      a.items.forEach(item => { html += `<p class="text-xs text-mist/70 pl-6">— ${item}</p>`; });
+      md += `## ${a.type}\n\n`;
+      a.items.forEach(item => { md += `- ${item}\n`; });
+      md += '\n';
     });
+
     if (state.stages[5].data?.checklist) {
-      html += '<div class="mt-3 pt-3 border-t border-white/8"><p class="text-xs text-mist mb-2">📋 交付物清单</p>';
-      state.stages[5].data.checklist.forEach(item => html += `<p class="text-xs text-white/70 pl-4">✓ ${item}</p>`);
-      html += '</div>';
+      md += `## 📋 交付清单\n\n`;
+      state.stages[5].data.checklist.forEach(item => md += `- [x] ${item}\n`);
+      md += '\n';
     }
-    content.innerHTML = html;
+
+    if (state.stages[5].data?.advice) {
+      md += `## 💡 制片建议\n\n${state.stages[5].data.advice}\n\n`;
+    }
+
+    content.innerHTML = `<pre class="text-xs text-white/80 leading-relaxed whitespace-pre-wrap max-h-[50vh] overflow-y-auto bg-panelSoft rounded-xl p-4">${md.replace(/</g,'&lt;')}</pre>`;
   }
   overlay.classList.remove('hidden');
+}
+
+function downloadExport() {
+  const assets = state._assets || [];
+  if (!assets.length) { toast('暂无资产可下载', 'info'); return; }
+  let md = `# AI视频导演台 · 项目导出\n\n> ${new Date().toLocaleDateString('zh-CN')} | ${state.config.platform} | ${state.config.style}\n\n---\n\n`;
+  assets.forEach(a => { md += `## ${a.type}\n\n`; a.items.forEach(item => md += `- ${item}\n`); md += '\n'; });
+  if (state.stages[5].data?.checklist) { md += `## 📋 交付清单\n\n`; state.stages[5].data.checklist.forEach(item => md += `- [x] ${item}\n`); }
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `AI导演台-导出-${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  toast('已下载 Markdown 文件', 'success');
 }
 
 function closeExport() {
