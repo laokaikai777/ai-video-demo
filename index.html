@@ -110,7 +110,12 @@
     .img-reveal { animation: imageReveal .8s cubic-bezier(.16,1,.3,1) both; }
     /* Hero KV section */
     .hero-kv-container { position: relative; overflow: hidden; }
-    .hero-kv-container img { width: 100%; height: auto; display: block; }
+    .hero-kv-container .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; }
+    .hero-kv-container .carousel-slide.active { opacity: 1; position: relative; }
+    .hero-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.25); border: none; cursor: pointer; transition: all .3s; }
+    .hero-dot.active { background: #b8945f; width: 24px; border-radius: 4px; }
+    .hero-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 40px; height: 40px; border-radius: 50%; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: 16px; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+    .hero-arrow:hover { background: rgba(184,148,95,.2); border-color: rgba(184,148,95,.4); }
     /* Card with hover glow */
     .card-glow-hover { transition: box-shadow .4s ease, border-color .4s ease, transform .3s ease; }
     .card-glow-hover:hover { animation: cardHoverGlow 2s ease-in-out infinite; transform: translateY(-2px); }
@@ -162,6 +167,25 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
+    /* ===== ONBOARDING SPOTLIGHT ===== */
+    #onboardingOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.72); backdrop-filter: blur(2px); display: none; }
+    #onboardingOverlay.active { display: block; }
+    .onboard-spotlight { position: absolute; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(0,0,0,.72); transition: all .4s cubic-bezier(.16,1,.3,1); pointer-events: none; }
+    .onboard-tooltip { position: absolute; background: #0d131b; border: 1px solid rgba(184,148,95,.35); border-radius: 18px; padding: 20px 24px; max-width: 300px; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: fadeInUp .4s ease both; }
+    .onboard-tooltip h4 { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px; font-family: 'Noto Serif SC', Georgia, serif; }
+    .onboard-tooltip p { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.6; }
+    .onboard-tooltip .onboard-arrow { position: absolute; width: 0; height: 0; border: 8px solid transparent; }
+    .onboard-arrow-top { bottom: -16px; left: 50%; transform: translateX(-50%); border-top-color: rgba(184,148,95,.25); }
+    .onboard-arrow-bottom { top: -16px; left: 50%; transform: translateX(-50%); border-bottom-color: rgba(184,148,95,.25); }
+    .onboard-arrow-left { right: -16px; top: 50%; transform: translateY(-50%); border-left-color: rgba(184,148,95,.25); }
+    .onboard-dots { display: flex; gap: 6px; margin-top: 12px; }
+    .onboard-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.15); transition: background .3s; }
+    .onboard-dot.active { background: #b8945f; }
+    .onboard-btn { border-radius: 999px; padding: 7px 16px; font-size: 12px; font-weight: 600; transition: all .22s; cursor: pointer; }
+    .onboard-btn-primary { background: #b8945f; color: #070a10; border: none; }
+    .onboard-btn-primary:hover { background: #d7b27c; }
+    .onboard-btn-ghost { background: transparent; color: rgba(255,255,255,.5); border: 1px solid rgba(255,255,255,.15); }
+    .onboard-btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,.3); }
   </style>
 </head>
 <body class="text-smoke antialiased selection:bg-gold/30 selection:text-white" style="touch-action:manipulation">
@@ -225,17 +249,45 @@
     </div>
   </nav>
 
-  <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition" aria-live="polite"></div>
+  <div id="toast" class="pointer-events-none fixed top-6 left-1/2 -translate-x-1/2 z-[70] opacity-0 transition" aria-live="polite"></div>
 
   <main>
     <!-- ===== HERO KV ===== -->
-    <div class="hero-kv-container relative mb-6 rounded-2xl border border-white/6 shadow-glow overflow-hidden img-reveal">
-      <img src="hero-kv.png" alt="AI视频导演台 — 五角色AI协作" class="w-full h-auto" loading="eager">
-      <div class="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent pointer-events-none"></div>
-      <div class="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-10 hero-kv-text">
-        <p class="kv-subtitle text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-gold/80 mb-1 md:mb-2">Five AI Roles · One Production Pipeline</p>
-        <h2 class="text-base md:text-xl lg:text-3xl font-bold text-white tracking-[0.04em] md:tracking-[0.06em]">从一句话到完整制片方案</h2>
-        <p class="hidden sm:block mt-1 md:mt-2 text-xs md:text-sm text-smoke/70 max-w-lg">编剧拆解你的故事，导演掌控叙事节奏，服化道构建视觉世界，音乐总监设计声音情绪，分镜师交付可执行的视频提示词——五步拿到完整制片方案，不是聊天记录。</p>
+    <div class="hero-kv-container relative mb-6 rounded-2xl border border-white/6 shadow-glow overflow-hidden" style="min-height:360px;max-height:520px">
+      <!-- Slide 1: 服化道 -->
+      <div class="carousel-slide active">
+        <img src="hero-kv.png" alt="AI视频导演台" class="w-full h-auto" loading="eager">
+        <div class="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-10">
+          <p class="text-[10px] uppercase tracking-[0.35em] text-gold/70 mb-1">服化道设计师 · 产出</p>
+          <p class="text-sm md:text-base text-white/80 font-serif italic max-w-xl mb-2">"昭和风木质老书店，暖黄钨丝灯光从书架间隙渗出，空气中有旧纸和咖啡的味道——每件道具的材质和年代感都写进了提示词"</p>
+          <p class="text-xs text-mist/50">← 滑动查看不同AI角色的产出 →</p>
+        </div>
+      </div>
+      <!-- Slide 2: 导演 -->
+      <div class="carousel-slide">
+        <img src="scene-board.png" alt="导演阐述" class="w-full h-auto" loading="lazy">
+        <div class="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-10">
+          <p class="text-[10px] uppercase tracking-[0.35em] text-gold/70 mb-1">导演 KAI · 产出</p>
+          <p class="text-sm md:text-base text-white/80 font-serif italic max-w-xl mb-2">"不止告诉你拍什么——节拍分析精确到每一段的叙事节奏、人物动机和镜头调度建议，让客户提案一次过"</p>
+        </div>
+      </div>
+      <!-- Slide 3: 分镜 -->
+      <div class="carousel-slide">
+        <img src="storyboard-triptych.png" alt="分镜提示词" class="w-full h-auto" loading="lazy">
+        <div class="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-transparent pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 right-0 p-4 md:p-8 lg:p-10">
+          <p class="text-[10px] uppercase tracking-[0.35em] text-gold/70 mb-1">分镜师 · 产出</p>
+          <p class="text-sm md:text-base text-white/80 font-serif italic max-w-xl mb-2">"每条视频提示词都按Seedance/可灵/Runway输入标准编写，包含镜头语言、光线、构图、动作描述——复制粘贴即可生成"</p>
+        </div>
+      </div>
+      <!-- Arrows -->
+      <button class="hero-arrow left-4" onclick="heroSlide(-1)" aria-label="上一张"><i class="fa fa-chevron-left"></i></button>
+      <button class="hero-arrow right-4" onclick="heroSlide(1)" aria-label="下一张"><i class="fa fa-chevron-right"></i></button>
+      <!-- Dots -->
+      <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10 md:hidden">
+        <button class="hero-dot active" onclick="heroJump(0)"></button><button class="hero-dot" onclick="heroJump(1)"></button><button class="hero-dot" onclick="heroJump(2)"></button>
       </div>
     </div>
 
@@ -280,18 +332,23 @@
             <select id="platformSelect" aria-label="选择发布平台" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
               <option value="抖音/快手">抖音/快手</option><option value="小红书">小红书</option><option value="视频号">视频号</option><option value="B站">B站</option><option value="YouTube">YouTube</option><option value="TikTok">TikTok</option><option value="品牌广告">品牌广告</option><option value="院线/电影节">院线/电影节</option><option value="全平台适配">全平台适配</option>
             </select>
-            <select id="styleSelect" aria-label="选择视觉风格" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="电影感写实">电影感写实</option><option value="赛博朋克/科幻">赛博朋克/科幻</option><option value="古风/国潮">古风/国潮</option><option value="极简/北欧">极简/北欧</option><option value="日系治愈/动漫">日系治愈/动漫</option><option value="暗黑/悬疑">暗黑/悬疑</option><option value="纪录片/纪实">纪录片/纪实</option><option value="时尚/奢侈品">时尚/奢侈品</option><option value="卡通/3D动画">卡通/3D动画</option><option value="复古/胶片">复古/胶片</option>
+            <select id="styleSelect" aria-label="选择视觉风格" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'styleCustomInput')">
+              <option value="电影感写实">电影感写实</option><option value="中国年代情怀">中国年代情怀</option><option value="古风/国潮">古风/国潮</option><option value="赛博朋克/科幻">赛博朋克/科幻</option><option value="日系治愈/动漫">日系治愈/动漫</option><option value="暗黑/悬疑">暗黑/悬疑</option><option value="纪录片/纪实">纪录片/纪实</option><option value="时尚/奢侈品">时尚/奢侈品</option><option value="卡通/3D动画">卡通/3D动画</option><option value="极简/北欧">极简/北欧</option><option value="复古/胶片">复古/胶片</option><option value="Auto">Auto AI自决</option><option value="__custom__">✍ 自定义（10字内）</option>
             </select>
-            <select id="audienceSelect" aria-label="选择目标受众" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="Z世代(18-25)">Z世代(18-25)</option><option value="都市白领(25-35)">都市白领(25-35)</option><option value="潮流文化爱好者">潮流文化爱好者</option><option value="文艺/艺术人群">文艺/艺术人群</option><option value="亲子家庭">亲子家庭</option><option value="泛人群">泛人群</option>
+            <select id="audienceSelect" aria-label="选择目标受众" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'audienceCustomInput')">
+              <option value="Z世代(18-25)">Z世代(18-25)</option><option value="都市白领(25-35)">都市白领(25-35)</option><option value="文艺/艺术人群">文艺/艺术人群</option><option value="潮流文化爱好者">潮流文化爱好者</option><option value="亲子家庭">亲子家庭</option><option value="情侣">情侣</option><option value="老人家">老人家</option><option value="孩童">孩童</option><option value="泛人群">泛人群</option><option value="Auto">Auto AI自决</option><option value="__custom__">✍ 自定义（10字内）</option>
             </select>
             <select id="aspectSelect" aria-label="选择画面比例" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
-              <option value="9:16">9:16 竖屏</option><option value="16:9">16:9 横屏</option><option value="1:1">1:1 方形</option><option value="21:9">21:9 宽银幕</option><option value="3:4">3:4</option><option value="4:3">4:3</option><option value="2:3">2:3</option><option value="3:2">3:2</option><option value="9:21">9:21</option><option value="Auto">Auto AI自决</option>
+              <option value="9:16">9:16 竖屏（抖音/快手）</option><option value="16:9">16:9 横屏（B站/YouTube）</option><option value="1:1">1:1 方形（小红书/Ins）</option><option value="21:9">21:9 宽银幕（电影感）</option><option value="3:4">3:4（小红书竖屏）</option><option value="4:3">4:3（早期电影画幅）</option><option value="2:3">2:3（人像写真）</option><option value="3:2">3:2（相机经典）</option><option value="9:21">9:21 超竖屏</option><option value="Auto">Auto AI自决</option>
             </select>
             <button id="startWizardBtn" class="interactive rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-ink hover:bg-[#d7b27c]" onclick="startWizard()">
               <i class="fa fa-play mr-1"></i>开始创作
             </button>
+          </div>
+          <!-- Custom input fields (hidden until user selects "__custom__") -->
+          <div class="flex flex-wrap gap-2 text-xs mt-2">
+            <input id="styleCustomInput" type="text" maxlength="10" class="hidden rounded-full border border-gold/30 bg-panelSoft px-3 py-1.5 text-white placeholder:text-mist/50 focus:border-gold/50 focus:outline-none w-40" placeholder="输入风格…">
+            <input id="audienceCustomInput" type="text" maxlength="10" class="hidden rounded-full border border-gold/30 bg-panelSoft px-3 py-1.5 text-white placeholder:text-mist/50 focus:border-gold/50 focus:outline-none w-40" placeholder="输入人群…">
           </div>
           <!-- Reference input (对标爆款) -->
           <div id="referenceRow" class="flex items-center gap-2">
@@ -348,50 +405,67 @@
     <section id="pricing" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12 text-center">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Pricing</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">零门槛上手，按需升级</h3>
-        <p class="mt-2 text-sm text-mist">完整 5 步工作流全员可用，免费版也能走完编剧到分镜全流程。没有隐藏费用，没有功能阉割。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">按质按量，透明计费</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl mx-auto">按字数计费，用多少扣多少。两种创作模式可选——标准够用，精致出大片。没用完的字数自动累积。</p>
       </div>
+
+      <!-- Model tier selector -->
+      <div class="flex justify-center mb-8">
+        <div class="inline-flex rounded-full border border-white/10 bg-panelSoft p-1 gap-1">
+          <button class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 bg-gold/15 text-gold border border-gold/30" id="tabCraft" onclick="state._pricingModel='craft';updatePricingUI()">🔧 匠心版</button>
+          <button class="px-5 py-2 rounded-full text-sm text-mist transition-all duration-300" id="tabElite" onclick="state._pricingModel='elite';updatePricingUI()">💎 臻境版</button>
+        </div>
+      </div>
+      <p class="text-center text-xs text-mist/50 -mt-4 mb-8" id="pricingModelDesc">匠心版：稳定精准，适合日常创作和批量产出</p>
+
+      <!-- Three plans -->
       <div class="grid gap-5 md:grid-cols-3 max-w-4xl mx-auto">
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
-          <p class="text-sm font-semibold text-white">免费试用</p>
+          <p class="text-sm font-semibold text-white">入门体验</p>
           <p class="mt-2 text-3xl font-bold text-white">¥0</p>
-          <p class="mt-1 text-xs text-mist">每月 3 次完整生成，体验全流程</p>
+          <p class="mt-1 text-xs text-mist"><span class="text-gold font-semibold" id="freeWords">30,000</span> 字/月</p>
+          <div class="mt-3 mx-auto max-w-[180px]"><div class="h-1.5 rounded-full bg-white/8 overflow-hidden"><div class="h-full rounded-full bg-gold/50" style="width:60%" id="freeBar"></div></div><p class="text-[10px] text-mist/40 mt-1">本月剩余 <span id="freeRemain">12,000</span> 字</p></div>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
             <li><i class="fa fa-check text-gold mr-1"></i> 完整 5 步创作流程</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 基础资产导出</li>
-            <li><i class="fa fa-check text-gold mr-1"></i> 3 次/月生成额度</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 仅限匠心版模式</li>
           </ul>
-          <button class="mt-5 w-full rounded-full border border-gold/30 py-2 text-sm text-gold interactive hover:bg-gold/10">免费开始创作</button>
+          <button class="mt-5 w-full rounded-full border border-gold/30 py-2 text-sm text-gold interactive hover:bg-gold/10">免费开始</button>
         </div>
+
         <div class="rounded-[24px] border border-gold/25 bg-panel/82 p-6 shadow-glow panel-frame interactive text-center relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-b from-gold/8 via-transparent to-transparent"></div>
           <div class="relative">
             <span class="inline-block rounded-full bg-gold/15 px-2 py-0.5 text-[10px] text-gold mb-2">推荐</span>
-            <p class="text-sm font-semibold text-white">专业版</p>
+            <p class="text-sm font-semibold text-white">专业创作</p>
             <p class="mt-2 text-3xl font-bold text-white">¥68<span class="text-sm text-mist">/月</span></p>
-            <p class="mt-1 text-xs text-mist">无限次生成，优先模型队列</p>
+            <p class="mt-1 text-xs text-mist"><span class="text-gold font-semibold" id="proWords">300,000</span> 字/月</p>
+            <div class="mt-3 mx-auto max-w-[180px]"><div class="h-1.5 rounded-full bg-white/8 overflow-hidden"><div class="h-full rounded-full bg-gold" style="width:75%" id="proBar"></div></div><p class="text-[10px] text-mist/40 mt-1">本月剩余 <span id="proRemain">225,000</span> 字</p></div>
             <ul class="mt-4 space-y-2 text-xs text-mist text-left">
-              <li><i class="fa fa-check text-gold mr-1"></i> 全部免费功能</li>
-              <li><i class="fa fa-check text-gold mr-1"></i> 无限次生成</li>
-              <li><i class="fa fa-check text-gold mr-1"></i> 故事板增强模式</li>
+              <li><i class="fa fa-check text-gold mr-1"></i> 全部入门功能</li>
+              <li><i class="fa fa-check text-gold mr-1"></i> 匠心版 + 臻境版双模式</li>
               <li><i class="fa fa-check text-gold mr-1"></i> 项目云端保存与分享</li>
+              <li><i class="fa fa-check text-gold mr-1"></i> 未用字数累积至下月</li>
             </ul>
-            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">升级专业版</button>
+            <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">升级创作</button>
           </div>
         </div>
+
         <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
-          <p class="text-sm font-semibold text-white">团队版</p>
+          <p class="text-sm font-semibold text-white">团队协作</p>
           <p class="mt-2 text-3xl font-bold text-white">¥188<span class="text-sm text-mist">/月</span></p>
-          <p class="mt-1 text-xs text-mist">多人协作 + API 接入，小型制作团队首选</p>
+          <p class="mt-1 text-xs text-mist"><span class="text-gold font-semibold" id="teamWords">1,000,000</span> 字/月</p>
+          <div class="mt-3 mx-auto max-w-[180px]"><div class="h-1.5 rounded-full bg-white/8 overflow-hidden"><div class="h-full rounded-full bg-gold" style="width:45%" id="teamBar"></div></div><p class="text-[10px] text-mist/40 mt-1">本月剩余 <span id="teamRemain">450,000</span> 字</p></div>
           <ul class="mt-4 space-y-2 text-xs text-mist text-left">
             <li><i class="fa fa-check text-gold mr-1"></i> 全部专业版功能</li>
-            <li><i class="fa fa-check text-gold mr-1"></i> 最多 5 人协作</li>
+            <li><i class="fa fa-check text-gold mr-1"></i> 最多 5 人协作共享字数池</li>
             <li><i class="fa fa-check text-gold mr-1"></i> API 接入权限</li>
             <li><i class="fa fa-check text-gold mr-1"></i> 优先技术支持</li>
           </ul>
-          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">预约演示</button>
+          <button class="mt-5 w-full rounded-full border border-white/10 py-2 text-sm text-mist interactive hover:border-gold/30 hover:text-white">联系团队</button>
         </div>
       </div>
+      <p class="text-center text-xs text-mist/40 mt-4">臻境版创作消耗 3 倍字数 | 所有方案支持 7 天无理由退款 | 字数月底清零（专业版+团队版可累积）</p>
     </section>
 
     <!-- ===== FAQ SECTION ===== -->
@@ -857,12 +931,20 @@ const $$ = (s) => document.querySelectorAll(s);
 
 // ===== TOAST =====
 let toastTimer;
-function toast(text) {
+// type: 'success' | 'error' | 'info' (default: 'info')
+function toast(text, type = 'info') {
   const el = $('#toast');
-  el.innerHTML = `<div class="rounded-full border border-gold/30 bg-panel/96 px-4 py-2.5 text-sm text-white shadow-glow backdrop-blur">${text}</div>`;
-  el.className = 'pointer-events-none fixed bottom-6 right-6 z-[70] toast-pop';
+  const icons = { success: '<i class="fa fa-check-circle mr-1.5 text-green-400"></i>', error: '<i class="fa fa-exclamation-circle mr-1.5 text-red-400"></i>', info: '<i class="fa fa-info-circle mr-1.5 text-gold/70"></i>' };
+  const colors = { success: 'border-green-500/30', error: 'border-red-500/30', info: 'border-gold/30' };
+  el.innerHTML = `<div class="rounded-full border ${colors[type]||colors.info} bg-panel/96 px-4 py-2.5 text-sm text-white shadow-glow backdrop-blur flex items-center">${icons[type]||icons.info}${text}<button class="ml-2 text-mist/40 hover:text-white shrink-0" onclick="dismissToast()" aria-label="关闭提示">×</button></div>`;
+  el.className = 'pointer-events-auto fixed top-6 left-1/2 -translate-x-1/2 z-[70] toast-pop';
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = 'pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition'; }, 3200);
+  toastTimer = setTimeout(dismissToast, 4000);
+}
+function dismissToast() {
+  clearTimeout(toastTimer);
+  const el = $('#toast');
+  el.className = 'pointer-events-none fixed top-6 left-1/2 -translate-x-1/2 z-[70] opacity-0 transition';
 }
 
 
@@ -922,10 +1004,10 @@ function completeStage(n, data) {
   if (n < 5) {
     state.stages[n + 1].status = 'active';
     state.stage = n + 1;
-    toast(`✅ 步骤 ${n}（${STAGES[n-1].name}）完成，进入下一步`);
+    toast(`✅ 步骤 ${n}（${STAGES[n-1].name}）完成，进入下一步`, 'success');
   } else {
     state.stage = 5;
-    toast('🎉 全部 5 步完成！可以导出项目了');
+    toast('🎉 全部 5 步完成！可以导出项目了', 'success');
   }
   updateAssets();
   renderProgress();
@@ -1018,6 +1100,27 @@ function showScriptStatus(name, content) {
   updateStartButton();
 }
 
+// ===== CUSTOM SELECT INPUTS =====
+function handleCustomSelect(sel, inputId) {
+  const input = $(inputId);
+  if (sel.value === '__custom__') {
+    input.classList.remove('hidden');
+    input.focus();
+  } else {
+    input.classList.add('hidden');
+    input.value = '';
+  }
+}
+
+function getSelectValue(selId, customInputId) {
+  const sel = $(selId);
+  if (sel.value === '__custom__') {
+    const input = $(customInputId);
+    return input.value.trim() || sel.value;
+  }
+  return sel.value;
+}
+
 function updateStartButton() {
   const btn = $('#startWizardBtn');
   if (state.config.mode === 'script' && !(state.config.scriptContent || '').trim()) {
@@ -1039,8 +1142,8 @@ function startWizard() {
     state.config.idea = idea;
   }
   state.config.platform = $('#platformSelect').value;
-  state.config.style = $('#styleSelect').value;
-  state.config.audience = $('#audienceSelect').value;
+  state.config.style = getSelectValue('#styleSelect', '#styleCustomInput');
+  state.config.audience = getSelectValue('#audienceSelect', '#audienceCustomInput');
   state.config.aspectRatio = $('#aspectSelect').value;
   state.config.reference = $('#referenceInput').value.trim();
   for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; }
@@ -1465,6 +1568,78 @@ function handleScriptUpload(input) {
   reader.readAsText(file);
 }
 
+// ===== MOCK DATA GENERATOR (falls back when backend unreachable) =====
+function generateMockData(n) {
+  const idea = state.config.idea || '一个关于时间与记忆的故事';
+  const style = state.config.style || '电影感写实';
+  const audience = state.config.audience || '泛人群';
+
+  if (n === 1) return {
+    projectTitle: idea.slice(0, 30) + (idea.length > 30 ? '…' : ''),
+    projectBrief: `这是一部以${style}风格创作的短片，面向${audience}群体。故事围绕核心创意展开，通过精心的叙事结构和视觉表达，传递深刻的情感共鸣。`,
+    segments: [
+      { id: 'S1', title: '开场 · 建立世界', duration: '0:00-0:45', goal: `以${style}手法建立故事世界观，介绍主要人物和核心冲突的雏形`, characters: '主角登场', scene: '开场场景' },
+      { id: 'S2', title: '发展 · 冲突升级', duration: '0:45-1:30', goal: '推动叙事，深化情感冲突，埋下转折伏笔', characters: '主角+配角互动', scene: '核心场景' },
+      { id: 'S3', title: '高潮 · 情感爆发', duration: '1:30-2:15', goal: '情感最高点，视觉冲击力最强的段落', characters: '全员出场', scene: '高潮场景' },
+      { id: 'S4', title: '尾声 · 余韵', duration: '2:15-3:00', goal: '回落收束，留给观众余味和思考空间', characters: '主角独白', scene: '结尾场景' }
+    ]
+  };
+
+  if (n === 2) return {
+    directorNotes: `导演阐述：本片的核心视觉语言应紧扣"${style}"基调。叙事节奏上，开场缓慢铺陈、中段逐步加速、高潮段落密集剪辑、尾声留白呼吸。全片的情感锚点是"人与人的连接"——每个镜头调度都服务于这个主题。`,
+    characterList: [
+      { name: '主角 A', role: '核心视角人物，承载观众情感代入' },
+      { name: '配角 B', role: '推动剧情转折的关键角色' },
+      { name: '配角 C', role: '提供对比视角，丰富主题层次' }
+    ],
+    sceneList: [
+      { name: '内景 · 开场空间', type: '主场景' },
+      { name: '外景 · 转折地点', type: '关键场景' },
+      { name: '内景 · 高潮空间', type: '情感核心场景' }
+    ],
+    beatAnalysis: [
+      { segmentId: 'S1', beatGoal: '建立世界观+引入核心冲突种子', cameraStyle: '广角稳定镜头，缓慢推轨', pacing: '舒缓铺陈' },
+      { segmentId: 'S2', beatGoal: '冲突逐步显性化，节奏开始加速', cameraStyle: '中近景交替，手持轻微晃动', pacing: '渐快' },
+      { segmentId: 'S3', beatGoal: '情感爆发点，视觉冲击力最大化', cameraStyle: '快速剪辑+特写+慢镜头穿插', pacing: '密集加速' },
+      { segmentId: 'S4', beatGoal: '回归平静，留下开放余韵', cameraStyle: '固定长镜头，自然光为主', pacing: '缓慢回落' }
+    ]
+  };
+
+  if (n === 3) return {
+    characters: [
+      { name: '主角 A', role: '核心人物', ageAppearance: '28-35岁，面容有故事感', costume: '简约但有质感的日常着装，色调与场景呼应', designNotes: '发型略带凌乱感，暗示内心波动。服装材质以棉麻为主，避免过于精致。' },
+      { name: '配角 B', role: '关键配角', ageAppearance: '40-50岁，沉稳有阅历', costume: '深色系正装或工装，强调权威感', designNotes: '配饰细节体现身份——一块旧手表、磨损的皮包。' }
+    ],
+    scenes: [
+      { name: '开场空间', type: '内景', lighting: '柔和的侧光+暖色调，营造熟悉感', mood: '安静中带一丝不安', designNotes: '空间布置有生活痕迹，不能太整洁。窗外光线随时间变化暗示叙事推进。' },
+      { name: '转折地点', type: '外景', lighting: '阴天自然光，低对比度', mood: '疏离、冷静', designNotes: '城市背景虚化，焦点始终在人。地面湿润反光增加画面层次。' }
+    ]
+  };
+
+  if (n === 4) return {
+    musicDirection: {
+      genre: '现代古典 + 电子氛围',
+      tempo: '72-85',
+      instruments: '钢琴、弦乐组、合成器pad、轻微打击乐',
+      referenceStyle: 'Max Richter / Olafur Arnalds 风格',
+      sunoPrompt: `Cinematic ambient piece, ${style} mood, slow build from solo piano to full string ensemble, emotional crescendo at midpoint, gentle electronic undertones, 72-85 BPM, minor key with hopeful resolution`
+    }
+  };
+
+  if (n === 5) return {
+    videoPrompts: [
+      { segmentId: 'S1', prompt: `开场镜头：广角固定机位，${style}色调，缓慢推轨进入空间。自然光从窗户斜射，灰尘在光束中浮动。主角静坐，镜头从背后缓缓绕到侧面——建立孤独感和空间关系。4K画质，浅景深，电影感色彩分级。` },
+      { segmentId: 'S2', prompt: `手持跟拍，中近景。主角穿过城市街道，镜头轻微晃动增加真实感。路人模糊虚化，焦点始终锁定主角面部表情变化。快速剪辑节奏，每个镜头不超过2秒。自然光+城市灯光混合。` },
+      { segmentId: 'S3', prompt: `高潮段落：快速剪辑+特写+慢镜头交替。音乐最密集处画面转为升格慢镜——主角转身、眼神变化、关键动作——每个细节被放大。灯光从暖黄突变为冷蓝，对比强烈。` },
+      { segmentId: 'S4', prompt: `结尾固定长镜头：主角回到开场空间，但光线已不同。窗外天色渐暗，室内只有一盏台灯。镜头缓慢后拉，主角越来越小，空间越来越大。留白5秒黑屏。${style}电影质感。` }
+    ],
+    advice: `制片建议：全片建议用${style}调色LUT统一风格。开场和结尾的两个长镜头建议用稳定器或滑轨拍摄，确保平滑度。高潮段落的慢镜头建议用60fps拍摄后降速到24fps，效果更流畅。`,
+    checklist: ['✅ 4条视频生成提示词 — 可直喂Seedance/可灵/Runway', '✅ 1份角色设计方案 — 可直喂Midjourney/SD出图', '✅ 1份场景设计方案 — 含灯光+氛围参数', '✅ 1份音乐创作简报 — 含Suno提示词', '✅ 1份制片建议 — 含拍摄+后期技术说明']
+  };
+
+  return {};
+}
+
 async function runStage(n) {
   const st = state.stages[n];
   st.status = 'loading';
@@ -1515,10 +1690,19 @@ async function runStage(n) {
     );
     completeStage(n, result);
   } catch (err) {
+    // Fallback to mock data if API is unreachable
+    if (err.message.includes('超时') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      try {
+        const mockResult = generateMockData(n);
+        toast('⚠️ 后端暂不可用，已使用演示数据', 'info');
+        completeStage(n, mockResult);
+        return;
+      } catch(mockErr) {}
+    }
     st.status = 'active';
     renderStageCard();
     const stgName = STAGES[n-1].name;
-    toast(`❌ ${stgName}生成失败：${err.message}`);
+    toast(`❌ ${stgName}生成失败：${err.message}`, 'error');
   }
 }
 
@@ -2348,6 +2532,21 @@ $('#exportOverlay').addEventListener('click', (e) => { if (e.target === $('#expo
   }
 });
 
+// ===== PRICING MODEL SELECTOR =====
+state._pricingModel = 'craft';
+function updatePricingUI() {
+  const isElite = state._pricingModel === 'elite';
+  $('#tabCraft').className = 'px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ' + (!isElite ? 'bg-gold/15 text-gold border border-gold/30' : 'text-mist');
+  $('#tabElite').className = 'px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ' + (isElite ? 'bg-gold/15 text-gold border border-gold/30' : 'text-mist');
+  $('#pricingModelDesc').textContent = isElite
+    ? '臻境版：深度创作引擎，生成质量更高、细节更丰富——每字消耗相当于匠心版×3'
+    : '匠心版：稳定精准，适合日常创作和批量产出';
+  // Update word counts with 3x multiplier for elite
+  const m = isElite ? 3 : 1;
+  $('#freeWords').textContent = (10000 * m).toLocaleString();
+  $('#proWords').textContent = (100000 * m).toLocaleString();
+  $('#teamWords').textContent = (333333 * m).toLocaleString();
+}
 // ===== INIT =====
 state.stages[1].status = 'active';
 renderProgress();
@@ -2371,7 +2570,30 @@ function renderWorkflowCards() {
   }).join('');
 }
 
-// ===== SCROLL-TRIGGERED REVEAL =====
+// ===== HERO CAROUSEL =====
+let heroSlideIdx = 0, heroAutoTimer = null;
+const heroSlides = () => document.querySelectorAll('.hero-kv-container .carousel-slide');
+const heroDots = () => document.querySelectorAll('.hero-kv-container .hero-dot');
+function heroJump(n) {
+  heroSlideIdx = n;
+  heroSlides().forEach((s,i) => { s.classList.toggle('active', i===n); });
+  heroDots().forEach((d,i) => { d.classList.toggle('active', i===n); });
+  resetHeroTimer();
+}
+function heroSlide(dir) { const t = heroSlides().length; heroJump((heroSlideIdx+dir+t)%t); }
+function resetHeroTimer() { clearInterval(heroAutoTimer); heroAutoTimer = setInterval(() => heroSlide(1), 5000); }
+(function initHeroCarousel() {
+  heroSlides().forEach((s,i) => s.classList.toggle('active', i===0));
+  resetHeroTimer();
+  const c = document.querySelector('.hero-kv-container');
+  if (c) {
+    c.addEventListener('mouseenter', () => clearInterval(heroAutoTimer));
+    c.addEventListener('mouseleave', resetHeroTimer);
+    let tx=0; c.addEventListener('touchstart', e => { tx=e.touches[0].clientX; });
+    c.addEventListener('touchend', e => { const dx=e.changedTouches[0].clientX-tx; if (Math.abs(dx)>40) heroSlide(dx>0?-1:1); });
+  }
+})();
+
 (function initScrollReveal() {
   const revealSections = document.querySelectorAll('#workflow, #pricing, #faq, #cases, #contact');
   const observer = new IntersectionObserver((entries) => {
@@ -2395,7 +2617,116 @@ document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
   if (e.key === 's' || e.key === 'S') { e.preventDefault(); cycleSound(); }
   if (e.key === 'm' || e.key === 'M') { e.preventDefault(); cycleMusic(); }
+  if (e.key === 'Escape') { skipOnboarding(); }
 });
+
+// ===== ONBOARDING TOUR =====
+const ONBOARD_STEPS = [
+  { target: '#configBar', title: '从这里输入你的创意', desc: '输入一句话想法或上传剧本，选择目标平台、视觉风格和画幅比例，然后点击开始创作。', arrow: 'bottom' },
+  { target: '#progressBar', title: '五步创作流水线', desc: '编剧→导演→服化道→音乐→分镜。五个AI角色接力协作，你审核每一步，确认后再交接。', arrow: 'right' },
+  { target: '#stageCard', title: 'AI产出的核心工作区', desc: '每一步AI角色都会产出专业内容——叙事段落、导演阐述、角色设计、配乐方案、视频提示词。你可以确认、修改或重做。', arrow: 'top' },
+  { target: '#assetList', title: '资产自动归集', desc: '所有设计资产——角色、场景、音乐方案、视频提示词——自动整理到右侧面板，随时导出。', arrow: 'left' },
+  { target: '#header', title: '创作环境由你调', desc: '顶栏右侧按钮：屏幕特效（雨/雪/闪烁）、白噪音（雨声/咖啡馆/森林等）、氛围音乐（电影/电子/爵士/古风）。按S键切白噪音，M键切音乐。', arrow: 'bottom' }
+];
+
+let onboardIdx = 0;
+
+function showOnboardStep(idx) {
+  onboardIdx = idx;
+  const step = ONBOARD_STEPS[idx];
+  const target = document.querySelector(step.target);
+  if (!target) { onboardStep(1); return; }
+
+  const rect = target.getBoundingClientRect();
+  const spotlight = $('#onboardSpotlight');
+  const pad = 8;
+  spotlight.style.left = (rect.left - pad) + 'px';
+  spotlight.style.top = (rect.top - pad) + 'px';
+  spotlight.style.width = (rect.width + pad * 2) + 'px';
+  spotlight.style.height = (rect.height + pad * 2) + 'px';
+
+  // Position tooltip
+  const tooltip = $('#onboardTooltip');
+  const ttW = 300;
+  let ttLeft, ttTop;
+  if (step.arrow === 'bottom') { ttLeft = rect.left + rect.width / 2 - ttW / 2; ttTop = rect.bottom + 20; }
+  else if (step.arrow === 'top') { ttLeft = rect.left + rect.width / 2 - ttW / 2; ttTop = rect.top - 20; }
+  else if (step.arrow === 'right') { ttLeft = rect.right + 20; ttTop = rect.top + rect.height / 2; }
+  else if (step.arrow === 'left') { ttLeft = rect.left - ttW - 20; ttTop = rect.top + rect.height / 2; }
+  else { ttLeft = rect.left + rect.width / 2 - ttW / 2; ttTop = rect.bottom + 20; }
+
+  // Clamp to viewport
+  ttLeft = Math.max(12, Math.min(ttLeft, window.innerWidth - ttW - 12));
+  ttTop = Math.max(12, Math.min(ttTop, window.innerHeight - 220));
+  tooltip.style.left = ttLeft + 'px';
+  tooltip.style.top = ttTop + 'px';
+  tooltip.style.transform = 'none';
+
+  $('#onboardTitle').textContent = (idx + 1) + '. ' + step.title;
+  $('#onboardDesc').textContent = step.desc;
+
+  // Arrow class
+  const arrows = ['onboard-arrow-top', 'onboard-arrow-bottom', 'onboard-arrow-left'];
+  const existing = tooltip.querySelector('.onboard-arrow');
+  if (existing) existing.remove();
+  if (step.arrow) {
+    const arrow = document.createElement('div');
+    arrow.className = 'onboard-arrow onboard-arrow-' + step.arrow;
+    tooltip.appendChild(arrow);
+  }
+
+  // Dots
+  $('#onboardDots').innerHTML = ONBOARD_STEPS.map((_, i) =>
+    `<div class="onboard-dot${i === idx ? ' active' : ''}"></div>`
+  ).join('');
+
+  // Prev/Next buttons
+  const prev = $('#onboardPrev');
+  const next = $('#onboardNext');
+  prev.style.visibility = idx === 0 ? 'hidden' : 'visible';
+  if (idx === ONBOARD_STEPS.length - 1) {
+    next.textContent = '开始创作';
+    next.onclick = skipOnboarding;
+  } else {
+    next.textContent = '下一步';
+    next.onclick = () => onboardStep(1);
+  }
+}
+
+function onboardStep(dir) {
+  const next = onboardIdx + dir;
+  if (next < 0 || next >= ONBOARD_STEPS.length) return;
+  showOnboardStep(next);
+}
+
+function skipOnboarding() {
+  $('#onboardingOverlay').classList.remove('active');
+  try { localStorage.setItem('aiDirectorOnboarded', '1'); } catch(e) {}
+}
+
+// Init onboarding
+(function initOnboarding() {
+  try { if (localStorage.getItem('aiDirectorOnboarded') === '1') return; } catch(e) {}
+  $('#onboardingOverlay').classList.add('active');
+  showOnboardStep(0);
+  window.addEventListener('resize', () => showOnboardStep(onboardIdx));
+})();
 </script>
+  <!-- Onboarding overlay -->
+  <div id="onboardingOverlay">
+    <div id="onboardSpotlight" class="onboard-spotlight"></div>
+    <div id="onboardTooltip" class="onboard-tooltip">
+      <h4 id="onboardTitle"></h4>
+      <p id="onboardDesc"></p>
+      <div class="onboard-dots" id="onboardDots"></div>
+      <div class="flex items-center justify-between mt-3 gap-2">
+        <button class="onboard-btn onboard-btn-ghost" onclick="skipOnboarding()">跳过引导</button>
+        <div>
+          <button id="onboardPrev" class="onboard-btn onboard-btn-ghost mr-1" onclick="onboardStep(-1)">上一步</button>
+          <button id="onboardNext" class="onboard-btn onboard-btn-primary" onclick="onboardStep(1)">下一步</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
