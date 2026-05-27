@@ -346,17 +346,17 @@
               </button>
             </div>
             <textarea id="scriptPasteArea" class="hidden mt-2 w-full bg-panelSoft border border-white/10 rounded-xl p-3 text-sm text-white placeholder:text-mist/50 focus:border-gold/40 focus:outline-none resize-y" rows="4" placeholder="在此粘贴你的剧本内容...&#10;&#10;粘贴后自动跳过编剧步骤，从导演分析开始。"></textarea>
-            <p id="scriptStatus" class="hidden mt-1 text-[10px] text-gold/70"><i class="fa fa-check-circle mr-1"></i><span></span></p>
+            <p id="topScriptStatus" class="hidden mt-1 text-[10px] text-gold/70"><i class="fa fa-check-circle mr-1"></i><span></span></p>
           </div>
           <!-- Options row -->
           <div class="flex flex-wrap gap-2 text-xs">
             <select id="platformSelect" aria-label="选择发布平台" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
               <option value="抖音/快手">抖音/快手</option><option value="小红书">小红书</option><option value="视频号">视频号</option><option value="B站">B站</option><option value="YouTube">YouTube</option><option value="TikTok">TikTok</option><option value="品牌广告">品牌广告</option><option value="院线/电影节">院线/电影节</option><option value="全平台适配">全平台适配</option>
             </select>
-            <select id="styleSelect" aria-label="选择视觉风格" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'styleCustomInput')">
+            <select id="styleSelect" aria-label="选择视觉风格" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'#styleCustomInput')">
               <option value="电影感写实">电影感写实</option><option value="中国年代情怀">中国年代情怀</option><option value="古风/国潮">古风/国潮</option><option value="赛博朋克/科幻">赛博朋克/科幻</option><option value="日系治愈/动漫">日系治愈/动漫</option><option value="暗黑/悬疑">暗黑/悬疑</option><option value="纪录片/纪实">纪录片/纪实</option><option value="时尚/奢侈品">时尚/奢侈品</option><option value="卡通/3D动画">卡通/3D动画</option><option value="极简/北欧">极简/北欧</option><option value="复古/胶片">复古/胶片</option><option value="Auto">Auto AI自决</option><option value="__custom__">✍ 自定义（10字内）</option>
             </select>
-            <select id="audienceSelect" aria-label="选择目标受众" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'audienceCustomInput')">
+            <select id="audienceSelect" aria-label="选择目标受众" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40" onchange="handleCustomSelect(this,'#audienceCustomInput')">
               <option value="Z世代(18-25)">Z世代(18-25)</option><option value="都市白领(25-35)">都市白领(25-35)</option><option value="文艺/艺术人群">文艺/艺术人群</option><option value="潮流文化爱好者">潮流文化爱好者</option><option value="亲子家庭">亲子家庭</option><option value="情侣">情侣</option><option value="老人家">老人家</option><option value="孩童">孩童</option><option value="泛人群">泛人群</option><option value="Auto">Auto AI自决</option><option value="__custom__">✍ 自定义（10字内）</option>
             </select>
             <select id="aspectSelect" aria-label="选择画面比例" class="rounded-full border border-white/10 bg-panelSoft px-3 py-1.5 text-mist focus:border-gold/40">
@@ -1182,7 +1182,7 @@ function toggleScriptPaste() {
 }
 
 function updateScriptStatus() {
-  const status = $('#scriptStatus');
+  const status = $('#topScriptStatus');
   const span = status.querySelector('span');
   const sc = state.config.scriptContent || '';
   if (sc.trim()) {
@@ -1196,7 +1196,7 @@ function updateScriptStatus() {
 
 function showScriptStatus(name, content) {
   state.config.scriptContent = content;
-  const status = $('#scriptStatus');
+  const status = $('#topScriptStatus');
   const span = status.querySelector('span');
   status.classList.remove('hidden');
   span.textContent = `已加载：${name}（${content.length} 字），将跳过编剧直接从导演开始`;
@@ -1649,7 +1649,7 @@ function renderWriterInput() {
         <p class="text-sm text-mist">编剧将基于你的想法，拆解出 3-4 个叙事段落。每个段落包含叙事目标、涉及角色、场景描述。</p>
         <div class="rounded-xl border border-white/6 bg-white/[0.02] p-4">
           <p class="text-xs text-mist/60 mb-1">当前想法</p>
-          <p class="text-sm text-white" id="currentIdeaPreview">${state.config.idea||'（请在上方输入框填写）'}</p>
+          <p class="text-sm text-white" id="currentIdeaPreview">${state.config.idea||'（在顶部输入框写下你的故事灵感）'}</p>
         </div>
         <!-- Creative interview / detail supplement -->
         <details class="group rounded-xl border border-white/6 bg-white/[0.01] overflow-hidden">
@@ -1784,8 +1784,8 @@ async function runStage(n) {
       // Sync config from inputs
       cfg.idea = $('#ideaInput').value.trim() || cfg.idea;
       cfg.platform = $('#platformSelect').value;
-      cfg.style = $('#styleSelect').value;
-      cfg.audience = $('#audienceSelect').value;
+      cfg.style = getSelectValue('#styleSelect','#styleCustomInput');
+      cfg.audience = getSelectValue('#audienceSelect','#audienceCustomInput');
       cfg.aspectRatio = $('#aspectSelect').value;
     }
 
@@ -2655,13 +2655,23 @@ function resetProject() {
     state.stages[1].status = 'active';
     state.stage = 1;
     state.config.idea = '';
+    state.config.scriptContent = '';
+    state.config.reference = '';
     state.config.mode = 'idea';
+    state.config.style = '电影感写实';
+    state.config.audience = 'Z世代(18-25)';
     state._assets = [];
     $('#ideaInput').value = '';
+    $('#referenceInput').value = '';
+    $('#styleSelect').value = '电影感写实';
+    $('#audienceSelect').value = 'Z世代(18-25)';
+    $('#styleCustomInput').classList.add('hidden'); $('#styleCustomInput').value = '';
+    $('#audienceCustomInput').classList.add('hidden'); $('#audienceCustomInput').value = '';
     updateAssets();
     renderProgress();
     renderStageCard();
     renderAssetPanel();
+    autosaveProject();
     toast('已重置，开始全新创作');
   });
 }
@@ -2783,9 +2793,10 @@ function renderWorkflowCards() {
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.target.isContentEditable || e.target.closest('[contenteditable],[role="textbox"]')) return;
   if (e.key === 's' || e.key === 'S') { e.preventDefault(); cycleSound(); }
   if (e.key === 'm' || e.key === 'M') { e.preventDefault(); cycleMusic(); }
-  if (e.key === 'Escape') { skipViewFinder(); }
+  if (e.key === 'Escape') { skipViewFinder(false); }
 });
 
 // ===== VIEWFINDER ONBOARDING =====
@@ -2828,7 +2839,7 @@ function showVFStep(idx) {
   $('#vfPrev').style.visibility = idx === 0 ? 'hidden' : 'visible';
   if (idx === VF_STEPS.length - 1) {
     $('#vfNext').textContent = '开始创作';
-    $('#vfNext').onclick = skipViewFinder;
+    $('#vfNext').onclick = () => skipViewFinder(true);
   } else {
     $('#vfNext').textContent = '下一步';
     $('#vfNext').onclick = () => vfStep(1);
@@ -2841,10 +2852,10 @@ function vfStep(dir) {
   showVFStep(next);
 }
 
-function skipViewFinder() {
+function skipViewFinder(save = false) {
   $('#vfOverlay').classList.remove('active');
   $('#vfCountdown').innerHTML = '';
-  try { localStorage.setItem('vfOnboarded', '1'); } catch(e) {}
+  if (save) { try { localStorage.setItem('vfOnboarded', '1'); } catch(e) {} }
 }
 
 function startVFCountdown(cb) {
@@ -2860,14 +2871,14 @@ function startVFCountdown(cb) {
   tick();
 }
 
-(function initViewfinder() {
+document.addEventListener('DOMContentLoaded', function initViewfinder() {
   try { if (localStorage.getItem('vfOnboarded') === '1') return; } catch(e) {}
   $('#vfOverlay').classList.add('active');
   startVFCountdown(() => {
     showVFStep(0);
     window.addEventListener('resize', () => { if ($('#vfOverlay').classList.contains('active')) positionViewfinder(document.querySelector(VF_STEPS[vfIdx].target)); });
   });
-})();
+});
 </script>
   <!-- Viewfinder Onboarding -->
   <div id="vfOverlay">
@@ -2875,7 +2886,7 @@ function startVFCountdown(cb) {
     <div id="vfCutout"><div id="vfCrossH"></div><div id="vfCrossV"></div><div id="vfRecDot"></div></div>
     <div id="vfTip"><p class="vf-step-num" id="vfStepNum"></p><p class="vf-title" id="vfTitle"></p><p class="vf-desc" id="vfDesc"></p></div>
     <div id="vfCountdown"></div>
-    <button id="vfSkip" onclick="skipViewFinder()">跳过引导</button>
+    <button id="vfSkip" onclick="skipViewFinder(true)">跳过引导</button>
     <div id="vfControls">
       <button class="vf-btn vf-btn-prev" id="vfPrev" onclick="vfStep(-1)">← 上一步</button>
       <div class="vf-dots" id="vfDots"></div>
