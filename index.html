@@ -66,6 +66,13 @@
     @keyframes progressLineGrow { from { transform: scaleY(0); transform-origin: top; } to { transform: scaleY(1); transform-origin: top; } }
     @keyframes borderGlow { 0%, 100% { border-color: rgba(184,148,95,.15); } 50% { border-color: rgba(184,148,95,.4); } }
     @keyframes floatUpDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes cursorGlowPulse { 0%, 100% { opacity: .6; transform: translate(-50%,-50%) scale(1); } 50% { opacity: .9; transform: translate(-50%,-50%) scale(1.15); } }
+    @keyframes ambientFloat { 0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; } 10% { opacity: .7; } 90% { opacity: .5; } 100% { transform: translateY(-10vh) translateX(40px) scale(1); opacity: 0; } }
+    @keyframes typewriterCursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes cardHoverGlow { 0%, 100% { box-shadow: 0 0 0 1px rgba(184,148,95,.1), 0 12px 36px rgba(0,0,0,.25); } 50% { box-shadow: 0 0 0 1px rgba(184,148,95,.25), 0 20px 48px rgba(184,148,95,.12); } }
+    @keyframes imageReveal { from { opacity: 0; transform: scale(1.04); filter: blur(8px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+    @keyframes borderPulse { 0%, 100% { border-color: rgba(184,148,95,.12); } 50% { border-color: rgba(184,148,95,.35); } }
+    @keyframes gentleDrift { 0% { transform: translate(0,0); } 25% { transform: translate(4px,-4px); } 50% { transform: translate(-2px,-8px); } 75% { transform: translate(-6px,-2px); } 100% { transform: translate(0,0); } }
     .pulse-dot { animation: pulse 2s ease-in-out infinite; }
     .stage-active { animation: stageGlow 2.2s ease-in-out infinite; }
     .fade-in-up { animation: fadeInUp .4s ease both; }
@@ -88,6 +95,26 @@
     #loadingHint { transition: opacity .2s ease; }
     /* Gold accent line */
     .gold-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(184,148,95,.3), transparent); }
+    /* Cursor glow */
+    #cursorGlow { position: fixed; pointer-events: none; z-index: 9999; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(211,177,122,.12) 0%, rgba(184,148,95,.04) 30%, transparent 60%); transform: translate(-50%,-50%); animation: cursorGlowPulse 3s ease-in-out infinite; display: none; }
+    @media (hover: none) and (pointer: coarse) { #cursorGlow { display: none !important; } }
+    /* Ambient particles */
+    .ambient-particle { position: fixed; pointer-events: none; z-index: 1; border-radius: 50%; animation: ambientFloat linear infinite; }
+    /* Image reveal on load */
+    .img-reveal { animation: imageReveal .8s cubic-bezier(.16,1,.3,1) both; }
+    /* Hero KV section */
+    .hero-kv-container { position: relative; overflow: hidden; }
+    .hero-kv-container img { width: 100%; height: auto; display: block; }
+    /* Card with hover glow */
+    .card-glow-hover { transition: box-shadow .4s ease, border-color .4s ease, transform .3s ease; }
+    .card-glow-hover:hover { animation: cardHoverGlow 2s ease-in-out infinite; transform: translateY(-2px); }
+    /* Typewriter text */
+    .typewriter-text { display: inline; }
+    .typewriter-text::after { content: '|'; animation: typewriterCursor .8s step-end infinite; color: #b8945f; }
+    /* Border pulse for active elements */
+    .border-pulse { animation: borderPulse 3s ease-in-out infinite; }
+    /* Gentle drift for decorative elements */
+    .gentle-drift { animation: gentleDrift 12s ease-in-out infinite; }
     @media (max-width: 1024px) {
       .asset-panel-mobile { max-height: 320px; }
     }
@@ -100,6 +127,10 @@
 <body class="text-smoke antialiased selection:bg-gold/30 selection:text-white">
   <div class="fixed inset-0 pointer-events-none opacity-30 bg-grid bg-[size:32px_32px]"></div>
   <div class="fixed inset-x-0 top-0 h-72 pointer-events-none bg-glow"></div>
+  <!-- Cursor glow -->
+  <div id="cursorGlow"></div>
+  <!-- Ambient particles layer -->
+  <div id="ambientParticles" class="fixed inset-0 pointer-events-none z-[1]"></div>
   <!-- FX Layer for rain/snow/sparkle -->
   <div id="fxLayer" class="fixed inset-0 pointer-events-none z-[89]"></div>
 
@@ -117,8 +148,10 @@
       <nav class="hidden items-center gap-5 text-sm text-mist lg:flex">
         <a href="#wizard" class="interactive hover:text-white">创作台</a>
         <a href="#workflow" class="interactive hover:text-white">工作流</a>
+        <a href="#cases" class="interactive hover:text-white">案例</a>
         <a href="#pricing" class="interactive hover:text-white">方案</a>
         <a href="#faq" class="interactive hover:text-white">FAQ</a>
+        <a href="#contact" class="interactive hover:text-white">联系</a>
       </nav>
       <div class="flex items-center gap-2">
         <button id="fxToggle" class="interactive rounded-full border border-white/10 px-2 py-2 text-xs text-mist hover:border-gold/30 hover:text-white" title="环境特效" aria-label="切换屏幕特效">☀️</button>
@@ -132,6 +165,17 @@
   <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-[70] opacity-0 transition"></div>
 
   <main>
+    <!-- ===== HERO KV ===== -->
+    <div class="hero-kv-container relative mb-6 rounded-2xl border border-white/6 shadow-glow overflow-hidden img-reveal">
+      <img src="hero-kv.png" alt="AI视频导演台 — 五角色AI协作" class="w-full h-auto" loading="eager">
+      <div class="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent pointer-events-none"></div>
+      <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10">
+        <p class="text-[10px] uppercase tracking-[0.4em] text-gold/80 mb-2">Five AI Roles · One Production Pipeline</p>
+        <h2 class="text-xl md:text-3xl font-bold text-white tracking-[0.06em]">从一句话到完整制片方案</h2>
+        <p class="mt-2 text-sm text-smoke/70 max-w-lg">编剧理解你的故事，导演掌控叙事节奏，服化道构建视觉世界，音乐总监设计声音情绪，分镜师生成可交付的视频提示词。</p>
+      </div>
+    </div>
+
     <!-- ===== WIZARD SECTION ===== -->
     <section id="wizard" class="shell pt-4 md:pt-8 xl:pt-10">
       <!-- Project Config Bar -->
@@ -170,7 +214,7 @@
         </div>
 
         <!-- CENTER: Stage Card -->
-        <div id="stageCard" class="relative overflow-hidden rounded-[28px] border border-white/6 bg-panel/82 shadow-panel panel-frame noise grain-overlay min-h-[460px] md:min-h-[520px]">
+        <div id="stageCard" class="relative overflow-hidden rounded-[28px] border border-white/6 bg-panel/82 shadow-panel panel-frame noise grain-overlay min-h-[460px] md:min-h-[520px] border-pulse">
           <div class="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent pointer-events-none"></div>
           <div id="stageCardInner" class="relative z-10">
 
@@ -201,29 +245,29 @@
         <p class="mt-2 text-sm text-mist max-w-xl">不是和单个AI来回聊天。编剧、导演、服化道、音乐、分镜——每个角色专精一件事，你审核确认后再交棒给下一位。</p>
       </div>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-pencil text-lg"></i></div>
-          <p class="text-sm font-semibold text-white">① 编剧</p>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(211,177,122,.08); box-shadow:0 0 16px rgba(211,177,122,.06)">✍️</div>
+          <p class="text-sm font-semibold text-white group-hover:text-gold transition-colors">① 编剧 KAI</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">输入一句话想法或上传完整剧本，AI 编剧拆解为 3-4 个叙事段落</p>
         </div>
-        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slateBlue/40 text-white mb-3"><i class="fa fa-video-camera text-lg"></i></div>
-          <p class="text-sm font-semibold text-white">② 导演</p>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(123,159,192,.08); box-shadow:0 0 16px rgba(123,159,192,.06)">🎬</div>
+          <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">② 导演 KAI</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">节拍分析、人物小传、场景清单、关键道具——导演视角的整体把控</p>
         </div>
-        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-paint-brush text-lg"></i></div>
-          <p class="text-sm font-semibold text-white">③ 服化道</p>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(192,144,123,.08); box-shadow:0 0 16px rgba(192,144,123,.06)">🎨</div>
+          <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">③ 服化道设计师</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">角色外观、服装材质、场景气氛、道具设计，可直接喂给生图 AI</p>
         </div>
-        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slateBlue/40 text-white mb-3"><i class="fa fa-music text-lg"></i></div>
-          <p class="text-sm font-semibold text-white">④ 音乐</p>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(139,158,123,.08); box-shadow:0 0 16px rgba(139,158,123,.06)">🎵</div>
+          <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">④ 音乐总监</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">曲风定调、BPM、情绪曲线、Suno 提示词，音乐总监一站式出方案</p>
         </div>
-        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold mb-3"><i class="fa fa-film text-lg"></i></div>
-          <p class="text-sm font-semibold text-white">⑤ 分镜</p>
+        <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive group card-glow-hover">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl mb-3 text-2xl" style="background:rgba(155,123,176,.08); box-shadow:0 0 16px rgba(155,123,176,.06)">🎥</div>
+          <p class="text-sm font-semibold text-white group-hover:text-white/90 transition-colors">⑤ 分镜师</p>
           <p class="mt-1 text-xs text-mist leading-relaxed">每个段落的视频提示词 + 故事板 + 交付清单，直接对接 Seedance/可灵/Runway</p>
         </div>
       </div>
@@ -237,7 +281,7 @@
         <p class="mt-2 text-sm text-mist">没有隐藏费用。所有方案都包含完整的 5 步工作流。</p>
       </div>
       <div class="grid gap-5 md:grid-cols-3 max-w-4xl mx-auto">
-        <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center">
+        <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
           <p class="text-sm font-semibold text-white">免费试用</p>
           <p class="mt-2 text-3xl font-bold text-white">¥0</p>
           <p class="mt-1 text-xs text-mist">每月 3 次完整生成</p>
@@ -264,7 +308,7 @@
             <button class="mt-5 w-full rounded-full bg-gold py-2 text-sm font-semibold text-ink interactive hover:bg-[#d7b27c]">立即订阅</button>
           </div>
         </div>
-        <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center">
+        <div class="rounded-[24px] border border-white/6 bg-panel/72 p-6 shadow-panel panel-frame interactive text-center card-glow-hover">
           <p class="text-sm font-semibold text-white">团队版</p>
           <p class="mt-2 text-3xl font-bold text-white">¥188<span class="text-sm text-mist">/月</span></p>
           <p class="mt-1 text-xs text-mist">多人协作 + API 接入</p>
@@ -291,28 +335,154 @@
             这和跟 AI 对话框聊天有什么区别？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">AI 对话框给你的是散乱的文字回复，没有结构、没有资产沉淀。我们把专业影视制作的五个角色——编剧、导演、服化道、音乐、分镜——整合成接力流水线，每一步产出可复用的结构化资产，而不是聊天记录。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">AI 对话框给你的是散乱的文字回复，没有结构、没有资产沉淀。我们把专业影视制作的五个角色——编剧、导演、服化道、音乐、分镜——整合成接力流水线，每一步产出可复用的结构化资产，而不是聊天记录。你拿到的不只是"一段回答"，而是一整套可以开拍的制片方案。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
             每一步必须手动确认才能继续吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">是的，这是刻意设计的。好的创作需要人在回路中做判断——AI 负责发散和产出，你负责审美和决策。当然，你也可以随时回到前面任何一步修改，后续资产会自动同步更新。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">是的，这是刻意设计的。好的创作需要人在回路中做判断——AI 负责发散和产出，你负责审美和决策。每一步你可以：直接确认进入下一步、点击"重新生成"换一个版本、或者回到前面任何一步修改，后续资产会自动同步更新。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            这个平台包不包 AI 调用？还是我需要自己买 Key？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">我们追求最大灵活性。目前所有方案的 AI 调用成本都包含在定价里，你不需要自己买 Key。未来会开放 BYOK（自带 Key）模式——想用自己调好的模型？接进来就行。想省心？用我们的默认服务就行。选择权在你手里。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
             生成的内容能直接拿来用吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">能。每条视频提示词都按照 Seedance、可灵、Runway 的输入标准编写，包含镜头语言、光线、构图、动作描述，复制粘贴就能用。角色和场景设计提示词也可以直接喂给 Midjourney 或 SD 出图。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">能。每条视频提示词都按照 Seedance、可灵、Runway 的输入标准编写，包含镜头语言、光线、构图、动作描述，复制粘贴就能用。角色和场景设计提示词也可以直接喂给 Midjourney 或 SD 出图。我们还计划在后续版本支持一键导出到这些平台。</div>
         </div>
         <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
           <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
             我已经有现成剧本了，还需要从编剧开始吗？
             <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
           </button>
-          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">不需要。在编剧步骤切换到"已有剧本"，粘贴或上传你的剧本后，系统会直接跳到导演分析——跳过编剧，从导演开始你的 4 步流程。</div>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">不需要。在编剧步骤切换到"已有剧本"，粘贴或上传你的剧本后，系统会直接跳到导演分析——跳过编剧，从导演开始你的 4 步流程。支持 .md 和 .txt 格式。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            我做的视频要发抖音/B站/小红书，能自动适配吗？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">可以。在配置栏选择目标平台和画幅比例（9:16竖屏 / 16:9横屏 / 1:1方形 / 21:9宽银幕），AI 会自动调整叙事节奏和构图建议。不同平台的受众偏好也会影响编剧和导演的创作方向。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            支持多集短剧吗？每集都要重新来一遍？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">当前版本每集独立创作。但角色和场景资产可以跨集复用——第一集设计好的角色外观，第二集直接调用，不用重做。多集项目管理功能已在规划中。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            免费版和专业版的核心差异在哪？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">免费版每月 3 次完整生成，包含全部 5 步流程，适合体验和轻量使用。专业版 ¥68/月无限次生成 + 故事板增强模式 + 项目云端保存 + 优先模型队列，适合认真创作的创作者。团队版 ¥188/月增加多人协作和 API 接入权限。</div>
+        </div>
+        <div class="faq-item rounded-2xl border border-white/6 bg-panel/72 panel-frame overflow-hidden">
+          <button class="faq-toggle w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white interactive">
+            你们后续会有什么功能？
+            <i class="fa fa-chevron-down text-mist transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer hidden px-5 pb-4 text-sm text-mist leading-relaxed">规划中的功能包括：一键导出到 Seedance/可灵、多集项目管理、团队协作空间、自定义模型 BYOK 接入、AI 音乐生成集成、故事板图片自动生成。如果你有特别想要的功能，欢迎通过下面的联系方式告诉我们。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CASE STUDIES ===== -->
+    <section id="cases" class="shell pt-16 md:pt-24">
+      <div class="mb-8 md:mb-12">
+        <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Case Studies</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">看看其他创作者怎么用</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl">以下是 AI 视频导演台产出的真实案例。每个案例从一句话想法开始，走完完整 5 步流程。</p>
+      </div>
+      <div class="grid gap-5 md:grid-cols-3">
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="storyboard-triptych.png" alt="古风反转短片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">古风反转短片</p>
+              <p class="text-xs text-mist/70 mt-0.5">雨夜真相 · 4段 · 抖音竖屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-gold/15 text-gold/80 rounded-full px-2 py-0.5">古风唯美</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">悬疑反转</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">9:16</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"从'雨夜古风反转'一句话，生成了完整的叙事结构、人物设定、场景设计，视频提示词直接喂给可灵出片。"</p>
+          </div>
+        </div>
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="scene-board.png" alt="城市情绪广告案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">城市情绪广告</p>
+              <p class="text-xs text-mist/70 mt-0.5">凌晨便利店 · 3段 · 品牌竖屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-slateBlue/30 text-white/70 rounded-full px-2 py-0.5">电影感写实</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">情绪向</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">品牌片</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"品牌方给的 brief 很模糊，用导演台拆出了清晰的故事线。导演阐述里的节拍分析直接拿去做客户提案。"</p>
+          </div>
+        </div>
+        <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
+          <div class="aspect-[9/16] overflow-hidden relative">
+            <img src="character-board.png" alt="3D动画短片案例" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+              <p class="text-sm font-semibold text-white">3D 动画短片</p>
+              <p class="text-xs text-mist/70 mt-0.5">星际信使 · 5段 · B站横屏</p>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <span class="text-[10px] bg-purple-500/15 text-purple-300/80 rounded-full px-2 py-0.5">赛博朋克</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">科幻</span>
+                <span class="text-[10px] bg-white/5 rounded-full px-2 py-0.5 text-mist/70">16:9</span>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 border-t border-white/6">
+            <p class="text-xs text-mist/70 leading-relaxed">"用导演台做完前期策划后，把角色设计和场景提示词导入 Blender 做 previs，节省了至少两天的概念设计时间。"</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CONTACT SECTION ===== -->
+    <section id="contact" class="shell py-16 md:py-24">
+      <div class="max-w-2xl mx-auto text-center">
+        <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Contact</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">联系与反馈</h3>
+        <p class="mt-2 text-sm text-mist">有任何问题、建议或合作意向，随时联系我们。</p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive text-center">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 mx-auto mb-3"><i class="fa fa-phone text-lg text-gold"></i></div>
+            <p class="text-xs text-mist/60 mb-1">电话 / 微信</p>
+            <p class="text-sm font-medium text-white cursor-pointer hover:text-gold transition" onclick="navigator.clipboard.writeText('18030708519');toast('已复制电话号码')">18030708519</p>
+          </div>
+          <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive text-center">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slateBlue/30 mx-auto mb-3"><i class="fa fa-envelope text-lg text-white/70"></i></div>
+            <p class="text-xs text-mist/60 mb-1">邮箱</p>
+            <p class="text-sm font-medium text-white cursor-pointer hover:text-gold transition break-all" onclick="navigator.clipboard.writeText('623743006@QQ.com');toast('已复制邮箱地址')">623743006@QQ.com</p>
+          </div>
+          <div class="rounded-2xl border border-white/6 bg-panel/72 p-5 panel-frame interactive text-center">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10 mx-auto mb-3"><i class="fa fa-wechat text-lg text-green-400/80"></i></div>
+            <p class="text-xs text-mist/60 mb-1">微信</p>
+            <p class="text-sm font-medium text-white cursor-pointer hover:text-gold transition" onclick="navigator.clipboard.writeText('18030708519');toast('已复制微信号')">18030708519</p>
+          </div>
         </div>
       </div>
     </section>
@@ -331,12 +501,13 @@
           </div>
           <p class="mt-4 text-sm leading-7 text-smoke/65">把专业影视前期制作流程——编剧、导演、服化道、音乐、分镜——变成每个创作者都能上手的 AI 协作界面。</p>
         </div>
-        <div class="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
+        <div class="grid grid-cols-2 gap-8 text-sm sm:grid-cols-4">
           <div>
             <p class="text-[11px] uppercase tracking-[0.3em] text-mist">产品</p>
             <ul class="mt-3 space-y-2 text-smoke/65">
               <li><a href="#wizard" class="interactive hover:text-white">创作台</a></li>
               <li><a href="#workflow" class="interactive hover:text-white">工作流</a></li>
+              <li><a href="#cases" class="interactive hover:text-white">案例</a></li>
               <li><a href="#pricing" class="interactive hover:text-white">方案</a></li>
             </ul>
           </div>
@@ -349,6 +520,14 @@
           </div>
           <div>
             <p class="text-[11px] uppercase tracking-[0.3em] text-mist">联系</p>
+            <ul class="mt-3 space-y-2 text-smoke/65">
+              <li><span class="cursor-pointer hover:text-white transition" onclick="navigator.clipboard.writeText('18030708519');this.nextElementSibling?.classList?.remove('hidden')">📞 18030708519</span></li>
+              <li><span class="cursor-pointer hover:text-white transition" onclick="navigator.clipboard.writeText('623743006@QQ.com')">📧 623743006@QQ.com</span></li>
+              <li><span class="cursor-pointer hover:text-white transition" onclick="navigator.clipboard.writeText('18030708519')">💬 微信: 18030708519</span></li>
+            </ul>
+          </div>
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.3em] text-mist">其他</p>
             <ul class="mt-3 space-y-2 text-smoke/65">
               <li><a href="#" id="contactFeedback" class="interactive hover:text-white">提交反馈</a></li>
             </ul>
@@ -389,11 +568,11 @@
 <script>
 // ===== STATE =====
 const STAGES = [
-  { id: 1, name: '编剧', icon: 'fa-pencil', role: '编剧 KAI', desc: '将你的想法拆解成叙事结构' },
-  { id: 2, name: '导演', icon: 'fa-video-camera', role: '导演 KAI', desc: '做节拍分析，梳理人物场景道具' },
-  { id: 3, name: '服化道', icon: 'fa-paint-brush', role: '服化道设计师', desc: '设计角色外观与场景气氛' },
-  { id: 4, name: '音乐', icon: 'fa-music', role: '音乐总监', desc: '设计配乐方案与环境音' },
-  { id: 5, name: '分镜', icon: 'fa-film', role: '分镜师', desc: '生成视频提示词与交付清单' }
+  { id: 1, name: '编剧', icon: 'fa-pencil', role: '编剧 KAI', desc: '将你的想法拆解成叙事结构', color: '#d3b17a', emoji: '✍️', tagline: '故事从一句话开始' },
+  { id: 2, name: '导演', icon: 'fa-video-camera', role: '导演 KAI', desc: '做节拍分析，梳理人物场景道具', color: '#7b9fc0', emoji: '🎬', tagline: '掌控叙事节奏' },
+  { id: 3, name: '服化道', icon: 'fa-paint-brush', role: '服化道设计师', desc: '设计角色外观与场景气氛', color: '#c0907b', emoji: '🎨', tagline: '让世界观可见' },
+  { id: 4, name: '音乐', icon: 'fa-music', role: '音乐总监', desc: '设计配乐方案与环境音', color: '#8b9e7b', emoji: '🎵', tagline: '耳朵里的情绪' },
+  { id: 5, name: '分镜', icon: 'fa-film', role: '分镜师', desc: '生成视频提示词与交付清单', color: '#9b7bb0', emoji: '🎥', tagline: '文字变成画面' }
 ];
 
 const API_URL = 'https://ai-video-demo-psi.vercel.app/api/generate';
@@ -610,16 +789,20 @@ function renderStageCard() {
 
   card.innerHTML = `
     <div class="stage-card-enter relative p-6 md:p-10 flex flex-col min-h-[460px] md:min-h-[520px]">
-      <!-- Header -->
-      <div class="flex items-center gap-4 mb-6">
-        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-gold/35 bg-gold/10 ${st.status === 'active' ? 'stage-active' : ''}">
-          <i class="fa fa-${s.icon} text-xl text-gold"></i>
+      <!-- Header with character avatar -->
+      <div class="flex items-start gap-4 mb-6">
+        <div class="relative shrink-0">
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl" style="background:${s.color}15; box-shadow:0 0 20px ${s.color}10, inset 0 0 20px ${s.color}08">${s.emoji}</div>
+          ${st.status === 'active' ? `<div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-ink stage-active"></div>` : ''}
         </div>
-        <div>
-          <p class="text-lg font-semibold text-white">${s.role}</p>
-          <p class="text-sm text-mist">${s.desc}</p>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="text-lg font-semibold text-white">${s.role}</p>
+            ${st.status === 'done' ? '<span class="rounded-full bg-green-500/15 px-3 py-0.5 text-xs text-green-400">✓ 已完成</span>' : st.status === 'active' ? `<span class="rounded-full px-2.5 py-0.5 text-[10px] text-white/50" style="background:${s.color}15">第${s.id}步</span>` : ''}
+          </div>
+          <p class="text-sm text-mist/70">${s.desc}</p>
+          <p class="text-xs mt-0.5" style="color:${s.color}99"><span id="stageTagline" class="typewriter-text">${s.tagline}</span></p>
         </div>
-        ${st.status === 'done' ? '<span class="ml-auto rounded-full bg-green-500/15 px-3 py-1 text-xs text-green-400">✓ 已完成</span>' : ''}
       </div>
       <!-- Body -->
       <div class="flex-1">${bodyHtml}</div>
@@ -628,6 +811,7 @@ function renderStageCard() {
         ${buildFooterButtons(s.id, st)}
       </div>
     </div>`;
+  startTypewriterCycle();
 }
 
 function buildFooterButtons(stageId, st) {
@@ -1017,6 +1201,68 @@ $('#confirmCancel').addEventListener('click', () => {
   $('#confirmOverlay').classList.add('hidden');
   confirmCallback = null;
 });
+
+// ===== CURSOR GLOW =====
+const cursorGlow = $('#cursorGlow');
+let cursorX = -100, cursorY = -100;
+let currentX = -100, currentY = -100;
+
+document.addEventListener('mousemove', (e) => {
+  cursorX = e.clientX;
+  cursorY = e.clientY;
+});
+
+function animateCursorGlow() {
+  currentX += (cursorX - currentX) * 0.08;
+  currentY += (cursorY - currentY) * 0.08;
+  if (Math.abs(cursorX - currentX) > .5 || Math.abs(cursorY - currentY) > .5) {
+    cursorGlow.style.display = 'block';
+    cursorGlow.style.left = currentX + 'px';
+    cursorGlow.style.top = currentY + 'px';
+  }
+  requestAnimationFrame(animateCursorGlow);
+}
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  animateCursorGlow();
+  cursorGlow.style.display = 'block';
+}
+
+// ===== AMBIENT PARTICLES =====
+(function initAmbientParticles() {
+  const container = $('#ambientParticles');
+  const colors = ['rgba(211,177,122,.15)', 'rgba(184,148,95,.1)', 'rgba(255,255,255,.06)', 'rgba(184,148,95,.08)'];
+  for (let i = 0; i < 18; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'ambient-particle';
+    const size = 2 + Math.random() * 5;
+    particle.style.width = size + 'px';
+    particle.style.height = size + 'px';
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.top = Math.random() * 100 + '%';
+    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.boxShadow = `0 0 ${4+Math.random()*8}px ${particle.style.background}`;
+    particle.style.animationDuration = (12 + Math.random() * 22) + 's';
+    particle.style.animationDelay = Math.random() * 15 + 's';
+    container.appendChild(particle);
+  }
+})();
+
+// ===== TYPWRITER TEXT CYCLE =====
+let typewriterTimer = null;
+function startTypewriterCycle() {
+  if (typewriterTimer) clearInterval(typewriterTimer);
+  const el = document.getElementById('stageTagline');
+  if (!el) return;
+  const s = STAGES[state.stage - 1];
+  const text = s.tagline;
+  let i = 0;
+  el.textContent = '';
+  el.classList.add('typewriter-text');
+  function type() {
+    if (i < text.length) { el.textContent += text[i]; i++; typewriterTimer = setTimeout(type, 80 + Math.random() * 60); }
+  }
+  type();
+}
 
 // ===== FX =====
 let fxInterval = null;
