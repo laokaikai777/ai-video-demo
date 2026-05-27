@@ -114,13 +114,7 @@
     /* Light table cards */
     .light-table-card { position: relative; overflow: hidden; }
     .light-table-card:hover img { transform: scale(1.03); }
-    /* Film sprocket border */
-    .film-border { position: relative; border-radius: 16px 16px 0 0; overflow: hidden; }
-    .film-border::before,.film-border::after { content:''; position:absolute; left:0;right:0; height:8px; background:repeating-linear-gradient(90deg, rgba(7,10,16,.7) 0px, rgba(7,10,16,.7) 6px, transparent 6px, transparent 12px); z-index:2; }
-    .film-border::before { top:0; } .film-border::after { bottom:0; }
-    /* Prompt quote block */
-    .prompt-quote { border-left: 2px solid rgba(184,148,95,.4); padding-left: 14px; }
-    .prompt-quote::before { content:'\201C'; font-family:'Noto Serif SC',Georgia,serif; font-size:28px; color:rgba(184,148,95,.3); line-height:0; vertical-align:-8px; margin-right:2px; }
+
     /* Card with hover glow */
     .card-glow-hover { transition: box-shadow .4s ease, border-color .4s ease, transform .3s ease; }
     .card-glow-hover:hover { animation: cardHoverGlow 2s ease-in-out infinite; transform: translateY(-2px); }
@@ -135,10 +129,8 @@
     h2, h3, .font-display { font-family: 'Noto Serif SC', Georgia, serif; }
     @media (max-width: 1024px) {
       .asset-panel-mobile { max-height: 320px; }
-      .hero-kv-text { padding: 1rem !important; }
-      .hero-kv-text h2 { font-size: 1.1rem !important; }
-      .hero-kv-text p { font-size: .7rem !important; display: none; }
-      .hero-kv-text .kv-subtitle { font-size: .6rem !important; }
+
+
     }
     @media (max-width: 768px) {
       .header-btn-text { display: none; }
@@ -156,8 +148,7 @@
     @media (max-width: 640px) {
       :root { --shell-width: calc(100vw - 18px); }
       .hide-mobile { display: none; }
-      .hero-kv-text h2 { font-size: .95rem !important; }
-      .hero-kv-text .kv-subtitle { font-size: .55rem !important; letter-spacing: .2em !important; }
+
       #stageCard { border-radius: 20px; min-height: 380px; }
       #stageCard .stage-card-enter { padding: 1rem !important; min-height: 380px; }
       .pricing-grid-mobile { grid-template-columns: 1fr !important; }
