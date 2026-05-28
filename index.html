@@ -912,7 +912,8 @@ const STAGES = [
     cardDesc: '编剧想的、导演要求的、服化道设计的——分镜师翻译成可灵/Seedance/Runway 直接执行的视频提示词' }
 ];
 
-const API_URL = 'https://ai-video-demo-psi.vercel.app/api/generate';
+const API_URL = 'https://cloud.hongqiye.com/v1/chat/completions';
+const API_KEY = 'sk-IMNGZPgAQMAii1EHiI4D0FQhtyVnrSzFEG8BnXGrtS2ASynH';
 
 const state = {
   stage: 1,
@@ -1023,39 +1024,59 @@ function showPromptFullscreen(text, title) {
 }
 
 // ===== API CALL =====
-async function apiCall(action, extra = {}) {
-  const body = {
-    action,
-    idea: state.config.idea,
-    platform: state.config.platform,
-    style: state.config.style,
-    audience: state.config.audience,
-    aspectRatio: state.config.aspectRatio,
-    reference: state.config.reference || '',
-    ...extra
+function buildSystemPrompt(action, cfg) {
+  const base = `你是AI视频导演台的一名AI角色。你正在为中国创作者生成专业影视前期制作内容。始终用中文回复。输出必须是合法的JSON。`;
+  const rolePrompts = {
+    write: `${base}\n你是编剧。用户给了故事灵感，你需要：\n1. 为项目起一个吸引人的标题\n2. 写一段简短的创作简介\n3. 将故事拆解为3-4个叙事段落\n每个段落包含：id（S1/S2/S3/S4）、title、duration、goal、characters、scene\n输出JSON格式：{"projectTitle":"...","projectBrief":"...","segments":[{id,title,duration,goal,characters,scene},...]}`,
+    direct: `${base}\n你是导演。拿到编剧的叙事段落后，你需要：\n1. 写一段导演阐述（directorNotes）\n2. 列出人物清单（characterList: [{name,role}]）\n3. 列出场景清单（sceneList: [{name,type}]）\n4. 为每个段落做节拍分析（beatAnalysis: [{segmentId,beatGoal,cameraStyle,pacing}]）\n输出JSON。`,
+    design: `${base}\n你是服化道设计师。拿到导演阐述后，你需要：\n1. 设计角色外观（characters: [{name,role,ageAppearance,costume,designNotes}]）\n2. 设计场景视觉（scenes: [{name,type,lighting,mood,designNotes}]）\n每个提示词必须精准、可直接复制给Midjourney/SD使用。输出JSON。`,
+    music: `${base}\n你是音乐总监。你需要设计配乐方案（musicDirection: {genre,tempo,instruments,referenceStyle,sunoPrompt}）。Suno提示词必须是英文，描述清晰。输出JSON。`,
+    storyboard: `${base}\n你是分镜师。你需要：\n1. 为每个段落写一条视频生成提示词（videoPrompts: [{segmentId,prompt}]）每条提示词按可灵/Seedance/Runway输入标准编写，包含镜头语言、光线、构图、动作描述\n2. 写制片建议（advice）\n3. 列交付清单（checklist: string[]）\n输出JSON。`
   };
-  // For steps 3+, pass director output
+  return rolePrompts[action] || rolePrompts.write;
+}
+
+function buildUserPrompt(action, cfg, extra) {
+  let p = `平台：${cfg.platform}\n风格：${cfg.style}\n受众：${cfg.audience}\n画幅：${cfg.aspectRatio}\n`;
+  if (cfg.reference) p += `对标参考：${cfg.reference}\n`;
+  if (cfg.idea) p += `\n核心创意：${cfg.idea}`;
+  if (extra.segments?.length) p += `\n\n编剧段落：\n${JSON.stringify(extra.segments)}`;
+  if (extra.directorOutput) p += `\n\n导演输出：\n${JSON.stringify(extra.directorOutput)}`;
+  if (extra.feedback) p += `\n\n用户修改意见（请根据以下意见调整产出）：\n${extra.feedback}`;
+  return p;
+}
+
+async function apiCall(action, extra = {}) {
+  const cfg = state.config;
+  const body = {
+    model: 'claude-sonnet-4-6',
+    temperature: 0.7,
+    max_tokens: action === 'write' ? 2048 : action === 'storyboard' ? 2048 : 1536,
+    messages: [
+      { role: 'system', content: buildSystemPrompt(action, cfg) },
+      { role: 'user', content: buildUserPrompt(action, cfg, extra) }
+    ]
+  };
+  // Pass director output for downstream stages
   if (['design','music','storyboard'].includes(action) && state.stages[2].data) {
-    body.directorOutput = state.stages[2].data;
+    body.messages[1].content += `\n\n导演输出：\n${JSON.stringify(state.stages[2].data)}`;
   }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || '未知错误');
-    return data.data;
-  } catch (err) {
-    if (err.name === 'AbortError') throw new Error('请求超时（55秒）。服务器响应太慢，请重试。');
-    throw err;
-  } finally {
-    clearTimeout(timeout);
-  }
+  const timeout = setTimeout(() => controller.abort(), 120000);
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+    body: JSON.stringify(body),
+    signal: controller.signal
+  });
+  clearTimeout(timeout);
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const json = await res.json();
+  const text = json.choices?.[0]?.message?.content || '';
+  // Extract JSON from markdown code blocks
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+  const data = jsonMatch ? JSON.parse(jsonMatch[1]) : JSON.parse(text);
+  return data;
 }
 
 // ===== STAGE MANAGEMENT =====
