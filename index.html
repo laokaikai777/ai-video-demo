@@ -587,8 +587,15 @@
     <section id="cases" class="shell pt-16 md:pt-24">
       <div class="mb-8 md:mb-12">
         <p class="text-[11px] uppercase tracking-[0.35em] text-mist">Case Studies</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">不是作图工具，是提示词工厂</h3>
-        <p class="mt-2 text-sm text-mist max-w-xl">每个案例走完五步流水线，产出的是可直接喂给 Seedance/可灵/Midjourney 的精准提示词资产——不是聊天记录，不是好看但没用的图。</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white md:text-3xl">一句话进去，五步出来什么？</h3>
+        <p class="mt-2 text-sm text-mist max-w-xl">每个案例都走完编剧→导演→服化道→音乐→分镜全流程。下面是真实的输入和产出——不是概念图，是可直接复制使用的提示词资产。</p>
+      </div>
+      <!-- Quick Demo -->
+      <div class="rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/[0.03] to-transparent p-5 mb-8 text-center">
+        <p class="text-sm font-semibold text-gold font-display mb-1">快速演示</p>
+        <p class="text-xs text-mist/50 mb-3">点"随机演示"，看五个角色接力产出完整提示词</p>
+        <div id="quickDemoOut" class="flex flex-wrap justify-center gap-1.5 mb-3 text-[10px]"></div>
+        <button class="interactive rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-ink hover:bg-[#d7b27c]" onclick="runQuickDemo()">🎲 随机演示</button>
       </div>
       <div class="grid gap-5 md:grid-cols-3">
         <!-- Case 1: 古风反转 - 中国古代 -->
@@ -2205,14 +2212,13 @@ function cycleFX() {
   setFX(next);
 }
 
-// ===== WEB AUDIO AMBIENT SOUND ENGINE =====
+
+// ===== AMBIENT SOUND ENGINE (remastered) =====
 let audioCtx = null;
 let soundNodes = [];
 
 async function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') await audioCtx.resume();
 }
 
@@ -2221,599 +2227,164 @@ function stopAllSounds() {
   soundNodes = [];
 }
 
-function createNoiseNode(duration = 2, gain = 0.08) {
-  const bufferSize = audioCtx.sampleRate * duration;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-  const gainNode = audioCtx.createGain();
-  gainNode.gain.value = gain;
-  source.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  source.start();
-  soundNodes.push(source);
-  return { source, gainNode };
+function makeNoise(dur, gain, type) {
+  const sz = audioCtx.sampleRate * dur;
+  const buf = audioCtx.createBuffer(1, sz, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < sz; i++) d[i] = type === 'pink' ? (Math.random()*2-1)/Math.sqrt(i%100+1) : Math.random()*2-1;
+  const src = audioCtx.createBufferSource(); src.buffer = buf; src.loop = true;
+  const gn = audioCtx.createGain(); gn.gain.value = gain;
+  src.connect(gn); gn.connect(audioCtx.destination);
+  src.start(); soundNodes.push(src);
+  return { src, gn };
 }
 
+// ===== RAIN (3-layer) =====
 function startRainSound() {
   stopAllSounds();
-  // Layer 1: Main rain (filtered white noise)
-  const { gainNode: g1 } = createNoiseNode(2, 0.12);
-  const lp1 = audioCtx.createBiquadFilter();
-  lp1.type = 'lowpass';
-  lp1.frequency.value = 1800;
-  lp1.Q.value = 0.5;
-  g1.disconnect();
-  g1.connect(lp1);
-  lp1.connect(audioCtx.destination);
-  soundNodes.push(g1);
-  // Layer 2: Distant rain rumble
-  const { gainNode: g2 } = createNoiseNode(3, 0.05);
-  const lp2 = audioCtx.createBiquadFilter();
-  lp2.type = 'lowpass';
-  lp2.frequency.value = 400;
-  g2.disconnect();
-  g2.connect(lp2);
-  lp2.connect(audioCtx.destination);
-  // Layer 3: Individual drops (occasional pops)
-  const dropGain = audioCtx.createGain();
-  dropGain.gain.value = 0.06;
-  const hp = audioCtx.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 2000;
-  const { gainNode: g3 } = createNoiseNode(0.3, 0.15);
-  g3.disconnect();
-  g3.connect(hp);
-  hp.connect(dropGain);
-  dropGain.connect(audioCtx.destination);
-  // Modulate drop volume for random patter
-  const lfo = audioCtx.createOscillator();
-  const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 3;
-  lfo.type = 'sawtooth';
-  lfoGain.gain.value = 1;
-  lfo.connect(lfoGain);
-  lfoGain.connect(dropGain.gain);
-  lfo.start();
-  soundNodes.push(lfo, g3);
+  const {gn:g1}=makeNoise(2,0.1,'pink');
+  const lp1=audioCtx.createBiquadFilter();lp1.type='lowpass';lp1.frequency.value=2000;lp1.Q.value=0.3;
+  g1.disconnect();g1.connect(lp1);lp1.connect(audioCtx.destination);
+  const {gn:g2}=makeNoise(4,0.04,'pink');
+  const lp2=audioCtx.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=200;
+  g2.disconnect();g2.connect(lp2);lp2.connect(audioCtx.destination);
+  const lfo=audioCtx.createOscillator();lfo.frequency.value=0.03;lfo.type='sine';
+  const lg=audioCtx.createGain();lg.gain.value=0.03;lfo.connect(lg);lg.connect(g2.gn);lfo.start();soundNodes.push(lfo);
+  const {gn:g3}=makeNoise(0.4,0.08,'white');
+  const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=2500;
+  g3.disconnect();g3.connect(hp);hp.connect(audioCtx.destination);
+  const lf2=audioCtx.createOscillator();lf2.frequency.value=1.5;lf2.type='triangle';
+  const lg2=audioCtx.createGain();lg2.gain.value=1;lf2.connect(lg2);lg2.connect(g3.gn);lf2.start();soundNodes.push(lf2,g3);
 }
 
+// ===== CAFE (warm cozy) =====
 function startCafeSound() {
   stopAllSounds();
-  // Layer 1: Low murmur
-  const { gainNode: g1 } = createNoiseNode(2, 0.06);
-  const lp1 = audioCtx.createBiquadFilter();
-  lp1.type = 'lowpass';
-  lp1.frequency.value = 600;
-  g1.disconnect();
-  g1.connect(lp1);
-  lp1.connect(audioCtx.destination);
-  // Layer 2: Mid-range chatter hint
-  const { gainNode: g2 } = createNoiseNode(1.7, 0.04);
-  const bp = audioCtx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 900;
-  bp.Q.value = 0.8;
-  g2.disconnect();
-  g2.connect(bp);
-  bp.connect(audioCtx.destination);
-  // Layer 3: Subtle warm hum
-  const osc = audioCtx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = 55;
-  const oscGain = audioCtx.createGain();
-  oscGain.gain.value = 0.02;
-  osc.connect(oscGain);
-  oscGain.connect(audioCtx.destination);
-  osc.start();
-  soundNodes.push(osc, g2);
+  const {gn:g1}=makeNoise(2,0.05,'pink');
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=800;
+  g1.disconnect();g1.connect(lp);lp.connect(audioCtx.destination);
+  const osc=audioCtx.createOscillator();osc.type='sine';osc.frequency.value=58;
+  const og=audioCtx.createGain();og.gain.value=0.015;osc.connect(og);og.connect(audioCtx.destination);osc.start();soundNodes.push(osc);
+  function clink(){if(state.effects.sound!=='cafe')return;const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=1200+Math.random()*600;const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.02,audioCtx.currentTime+0.005);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.3);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.3);setTimeout(clink,4000+Math.random()*10000);}
+  clink();
 }
 
+// ===== FOREST =====
 function startForestSound() {
   stopAllSounds();
-  // Layer 1: Soft wind through leaves
-  const { gainNode: g1 } = createNoiseNode(3, 0.07);
-  const lp1 = audioCtx.createBiquadFilter();
-  lp1.type = 'lowpass';
-  lp1.frequency.value = 2500;
-  g1.disconnect();
-  g1.connect(lp1);
-  lp1.connect(audioCtx.destination);
-  // Layer 2: Distant breeze modulation
-  const lfo = audioCtx.createOscillator();
-  lfo.frequency.value = 0.15;
-  const lfoGain = audioCtx.createGain();
-  lfoGain.gain.value = 0.02;
-  lfo.connect(lfoGain);
-  lfoGain.connect(g1.gain);
-  lfo.start();
-  soundNodes.push(lfo);
-  // Layer 3: Occasional bird-like tones
-  function chirp() {
-    if (state.effects.sound !== 'forest') return;
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = 1800 + Math.random() * 2000;
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0, audioCtx.currentTime);
-    g.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
-    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.25);
-    osc.connect(g);
-    g.connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.3);
-    soundNodes.push(g);
-    setTimeout(() => { const idx = soundNodes.indexOf(g); if (idx >= 0) soundNodes.splice(idx, 1); }, 350);
-    setTimeout(chirp, 2000 + Math.random() * 6000);
-  }
-  chirp();
+  const {gn:g1}=makeNoise(3,0.06,'pink');
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3000;
+  g1.disconnect();g1.connect(lp);lp.connect(audioCtx.destination);
+  const lfo=audioCtx.createOscillator();lfo.frequency.value=0.12;lfo.type='sine';
+  const lg=audioCtx.createGain();lg.gain.value=0.02;lfo.connect(lg);lg.connect(g1.gn);lfo.start();soundNodes.push(lfo);
+  function bird(){if(state.effects.sound!=='forest')return;const o=audioCtx.createOscillator();o.type='sine';const f=1600+Math.random()*1800;o.frequency.setValueAtTime(f,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(f+300,audioCtx.currentTime+0.08);o.frequency.linearRampToValueAtTime(f-100,audioCtx.currentTime+0.2);const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.02,audioCtx.currentTime+0.04);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.3);setTimeout(bird,2000+Math.random()*8000);}
+  bird();
 }
 
+// ===== WAVES (irregular swell) =====
 function startWavesSound() {
   stopAllSounds();
-  // Layered noise modulated for wave rhythm
-  const { gainNode: g1 } = createNoiseNode(2, 0.08);
-  const lp1 = audioCtx.createBiquadFilter();
-  lp1.type = 'lowpass';
-  lp1.frequency.value = 800;
-  g1.disconnect();
-  g1.connect(lp1);
-  lp1.connect(audioCtx.destination);
-  // LFO for wave swell
-  const lfo = audioCtx.createOscillator();
-  lfo.frequency.value = 0.08;
-  const lfoGain = audioCtx.createGain();
-  lfoGain.gain.value = 0.06;
-  lfo.connect(lfoGain);
-  lfoGain.connect(g1.gain);
-  lfo.start();
-  soundNodes.push(lfo);
+  const {gn:g1}=makeNoise(2,0.06,'pink');
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;
+  g1.disconnect();g1.connect(lp);lp.connect(audioCtx.destination);
+  [0.06,0.13,0.22].forEach(f=>{const lfo=audioCtx.createOscillator();lfo.frequency.value=f;lfo.type='sine';const lg=audioCtx.createGain();lg.gain.value=0.03;lfo.connect(lg);lg.connect(g1.gn);lfo.start();soundNodes.push(lfo);});
+  const {gn:g2}=makeNoise(1.5,0.02,'white');
+  const hp=audioCtx.createBiquadFilter();hp.type='highpass';hp.frequency.value=4000;
+  g2.disconnect();g2.connect(hp);hp.connect(audioCtx.destination);
 }
 
+// ===== CAMPFIRE (warm + crackle) =====
 function startCampfireSound() {
   stopAllSounds();
-  // Crackling fire: high-freq noise with sharp modulation
-  const { gainNode: g1 } = createNoiseNode(1.5, 0.05);
-  const bp1 = audioCtx.createBiquadFilter();
-  bp1.type = 'bandpass';
-  bp1.frequency.value = 3000;
-  bp1.Q.value = 0.5;
-  g1.disconnect();
-  g1.connect(bp1);
-  bp1.connect(audioCtx.destination);
-  // Random crackle pops
-  function crackle() {
-    if (state.effects.sound !== 'campfire') return;
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.08 * Math.random(), audioCtx.currentTime + 0.02);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1 + Math.random() * 0.2);
-    gain.connect(audioCtx.destination);
-    const osc = audioCtx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.value = 200 + Math.random() * 600;
-    osc.connect(gain);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.3);
-    soundNodes.push(gain);
-    setTimeout(() => { const idx = soundNodes.indexOf(gain); if (idx >= 0) soundNodes.splice(idx, 1); }, 350);
-    setTimeout(crackle, 200 + Math.random() * 1200);
-  }
+  const osc=audioCtx.createOscillator();osc.type='triangle';osc.frequency.value=42;
+  const og=audioCtx.createGain();og.gain.value=0.02;osc.connect(og);og.connect(audioCtx.destination);osc.start();soundNodes.push(osc);
+  const {gn:g1}=makeNoise(1.5,0.04,'white');
+  const bp=audioCtx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=3500;bp.Q.value=0.8;
+  g1.disconnect();g1.connect(bp);bp.connect(audioCtx.destination);
+  function crackle(){if(state.effects.sound!=='campfire')return;const o=audioCtx.createOscillator();o.type='triangle';o.frequency.value=300+Math.random()*500;const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.05*Math.random(),audioCtx.currentTime+0.01);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.08+Math.random()*0.15);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.3);setTimeout(crackle,150+Math.random()*900);}
   crackle();
 }
 
+// ===== TYPING (softer) =====
 function startTypingSound() {
   stopAllSounds();
-  // Gentle keystroke rhythm
-  function keystroke() {
-    if (state.effects.sound !== 'typing') return;
-    const osc = audioCtx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.value = 400 + Math.random() * 300;
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0, audioCtx.currentTime);
-    g.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.01);
-    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.06);
-    osc.connect(g);
-    g.connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.08);
-    soundNodes.push(g);
-    setTimeout(() => { const idx = soundNodes.indexOf(g); if (idx >= 0) soundNodes.splice(idx, 1); }, 100);
-    const nextDelay = 60 + Math.random() * 250 + (Math.random() > 0.85 ? 400 : 0);
-    setTimeout(keystroke, nextDelay);
-  }
-  keystroke();
+  function key(){if(state.effects.sound!=='typing')return;const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=350+Math.random()*250;const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.025,audioCtx.currentTime+0.006);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.05);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.06);const o2=audioCtx.createOscillator();o2.type='triangle';o2.frequency.value=60+Math.random()*30;const g2=audioCtx.createGain();g2.gain.setValueAtTime(0,audioCtx.currentTime);g2.gain.linearRampToValueAtTime(0.008,audioCtx.currentTime+0.003);g2.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.03);o2.connect(g2);g2.connect(audioCtx.destination);o2.start(audioCtx.currentTime);o2.stop(audioCtx.currentTime+0.04);setTimeout(key,50+Math.random()*200+(Math.random()>0.85?500:0));}
+  key();
+}
+
+// ===== STUDY ROOM (new) =====
+function startStudyRoomSound() {
+  stopAllSounds();
+  const {gn:g1}=makeNoise(3,0.03,'pink');
+  const lp=audioCtx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;
+  g1.disconnect();g1.connect(lp);lp.connect(audioCtx.destination);
+  function page(){if(state.effects.sound!=='study')return;const o=audioCtx.createOscillator();o.type='triangle';o.frequency.value=200+Math.random()*100;const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.012,audioCtx.currentTime+0.01);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.15);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.2);setTimeout(page,8000+Math.random()*20000);}
+  page();
+}
+
+// ===== NIGHT RAIN (new) =====
+function startNightRainSound() {
+  startRainSound();
+  setTimeout(()=>{if(state.effects.sound!=='nightrain')return;const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=35;const g=audioCtx.createGain();g.gain.setValueAtTime(0,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.04,audioCtx.currentTime+1.5);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+5);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+6);soundNodes.push(o);},3000);
 }
 
 const SOUND_STARTERS = {
   rain: startRainSound, cafe: startCafeSound, forest: startForestSound,
-  waves: startWavesSound, campfire: startCampfireSound, typing: startTypingSound
+  waves: startWavesSound, campfire: startCampfireSound, typing: startTypingSound,
+  study: startStudyRoomSound, nightrain: startNightRainSound
 };
 
 function startAmbientSound(type) {
   state.effects.sound = type;
-  initAudio().then(() => {
-    SOUND_STARTERS[type]?.();
-  });
+  initAudio().then(() => { SOUND_STARTERS[type]?.(); });
 }
 
 // ===== SOUND TOGGLE =====
 function cycleSound() {
-  const sounds = ['none', 'rain', 'cafe', 'forest', 'waves', 'campfire', 'typing'];
-  const current = sounds.indexOf(state.effects.sound);
-  const next = sounds[(current + 1) % sounds.length];
-  state.effects.sound = next;
-  const icons = { none: '🔇', rain: '🌧️', cafe: '☕', forest: '🌿', waves: '🌊', campfire: '🔥', typing: '⌨️' };
-  const labels = { none: '无白噪音', rain: '雨声', cafe: '咖啡馆', forest: '森林', waves: '海浪', campfire: '篝火', typing: '打字机' };
-  $('#soundToggle').textContent = icons[next];
-  $('#soundToggle').title = labels[next];
-
-  if (next === 'none') {
-    stopAllSounds();
-    toast('白噪音已关闭');
-  } else {
-    startAmbientSound(next);
-    toast(`🎧 ${labels[next]} 环境音`);
-  }
+  const sounds = ['none','rain','nightrain','cafe','forest','waves','campfire','typing','study'];
+  const idx = sounds.indexOf(state.effects.sound);
+  state.effects.sound = sounds[(idx+1)%sounds.length];
+  const icons = {none:'🔇',rain:'🌧️',nightrain:'⛈️',cafe:'☕',forest:'🌿',waves:'🌊',campfire:'🔥',typing:'⌨️',study:'📖'};
+  const labels = {none:'无白噪音',rain:'雨声',nightrain:'夜雨',cafe:'咖啡馆',forest:'森林',waves:'海浪',campfire:'篝火',typing:'打字机',study:'自习室'};
+  $('#soundToggle').textContent = icons[state.effects.sound];
+  if (state.effects.sound==='none') {stopAllSounds();toast('白噪音已关闭');return;}
+  startAmbientSound(state.effects.sound);
+  toast('🎧 '+labels[state.effects.sound]+' 环境音');
 }
 
-// ===== CINEMATIC MUSIC ENGINE (shares audioCtx with ambient sounds) =====
+// ===== MUSIC ENGINE (ambient pads only, no creepy melodies) =====
 let musicNodes = [];
-let musicTimeout = null;
-const PENTATONIC = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99];
+function stopMusic() { musicNodes.forEach(n=>{try{n.stop()}catch(e){}}); musicNodes=[]; }
 
-function stopMusic() {
-  musicNodes.forEach(n => { try { n.stop(); } catch(e) {} });
-  musicNodes = [];
-  if (musicTimeout) { clearTimeout(musicTimeout); musicTimeout = null; }
-}
-
-function playNote(freq, startTime, duration = 1.5, gain = 0.04, type = 'sine') {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  osc.type = type;
-  osc.frequency.value = freq;
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(0, startTime);
-  g.gain.linearRampToValueAtTime(gain, startTime + 0.2);
-  g.gain.linearRampToValueAtTime(gain * 0.6, startTime + duration * 0.6);
-  g.gain.linearRampToValueAtTime(0, startTime + duration);
-  osc.connect(g);
-  g.connect(audioCtx.destination);
-  osc.start(startTime);
-  osc.stop(startTime + duration + 0.1);
-  musicNodes.push(osc);
-  const endTime = (startTime + duration + 0.15) * 1000;
-  setTimeout(() => {
-    const idx = musicNodes.indexOf(osc);
-    if (idx >= 0) musicNodes.splice(idx, 1);
-  }, endTime - audioCtx.currentTime * 1000 + 100);
-}
-
-function scheduleNextNote() {
-  if (!musicNodes.length) return;
-  const now = audioCtx.currentTime;
-  const freq = PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)];
-  const dur = 1.2 + Math.random() * 2.5;
-  const gain = 0.02 + Math.random() * 0.04;
-  playNote(freq, now + 0.1, dur, gain, Math.random() > 0.5 ? 'sine' : 'triangle');
-  musicTimeout = setTimeout(scheduleNextNote, 800 + Math.random() * 2200);
+function playPad(freqs,gain,type) {
+  if(!audioCtx)return;
+  freqs.forEach(f=>{const o=audioCtx.createOscillator();o.type=type||'sine';o.frequency.value=f;const g=audioCtx.createGain();g.gain.value=gain;o.connect(g);g.connect(audioCtx.destination);o.start();musicNodes.push(o);});
 }
 
 function stopAmbientIfPlaying() {
-  if (state.effects.sound !== 'none') {
-    stopAllSounds();
-    state.effects.sound = 'none';
-    $('#soundToggle').textContent = '🔇';
-  }
+  if(state.effects.sound!=='none'){stopAllSounds();state.effects.sound='none';$('#soundToggle').textContent='🔇';}
 }
 
-function startCinematicMusic() {
-  initAudio().then(() => {
-    stopMusic();
-    stopAmbientIfPlaying();
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.value = 55;
-    const g1 = audioCtx.createGain();
-    g1.gain.value = 0.03;
-    osc1.connect(g1);
-    g1.connect(audioCtx.destination);
-    osc1.start();
-    musicNodes.push(osc1);
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.value = 65.41;
-    const g2 = audioCtx.createGain();
-    g2.gain.value = 0.025;
-    osc2.connect(g2);
-    g2.connect(audioCtx.destination);
-    osc2.start();
-    musicNodes.push(osc2);
-    const osc3 = audioCtx.createOscillator();
-    osc3.type = 'sine';
-    osc3.frequency.value = 261.63;
-    const g3 = audioCtx.createGain();
-    g3.gain.value = 0.015;
-    const lfo = audioCtx.createOscillator();
-    lfo.frequency.value = 0.12;
-    const lfoG = audioCtx.createGain();
-    lfoG.gain.value = 0.008;
-    lfo.connect(lfoG);
-    lfoG.connect(g3.gain);
-    lfo.start();
-    osc3.connect(g3);
-    g3.connect(audioCtx.destination);
-    osc3.start();
-    musicNodes.push(osc3, lfo);
-    scheduleNextNote();
-  });
-}
-
-function startElectronicMusic() {
-  initAudio().then(() => {
-    stopMusic();
-    stopAmbientIfPlaying();
-    // Deep bass drone
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sawtooth';
-    osc1.frequency.value = 41.2;
-    const g1 = audioCtx.createGain();
-    g1.gain.value = 0.02;
-    const lp1 = audioCtx.createBiquadFilter();
-    lp1.type = 'lowpass';
-    lp1.frequency.value = 200;
-    osc1.connect(g1);
-    g1.connect(lp1);
-    lp1.connect(audioCtx.destination);
-    osc1.start();
-    musicNodes.push(osc1);
-    // Pad chord
-    [130.81, 196.00, 261.63].forEach(f => {
-      const osc = audioCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.value = f;
-      const g = audioCtx.createGain();
-      g.gain.value = 0.015;
-      const lfo2 = audioCtx.createOscillator();
-      lfo2.frequency.value = 0.2 + Math.random() * 0.1;
-      const lfoG2 = audioCtx.createGain();
-      lfoG2.gain.value = 0.01;
-      lfo2.connect(lfoG2);
-      lfoG2.connect(g.gain);
-      lfo2.start();
-      osc.connect(g);
-      g.connect(audioCtx.destination);
-      osc.start();
-      musicNodes.push(osc, lfo2);
-    });
-    scheduleNextNoteElectronic();
-  });
-}
-
-function scheduleNextNoteElectronic() {
-  if (!musicNodes.length) return;
-  const now = audioCtx.currentTime;
-  const freqs = [65.41, 98.00, 130.81, 196.00, 261.63, 329.63, 392.00, 523.25];
-  const freq = freqs[Math.floor(Math.random() * freqs.length)];
-  const dur = 1.5 + Math.random() * 3;
-  const gain = 0.015 + Math.random() * 0.03;
-  playNote(freq, now + 0.05, dur, gain, 'sawtooth');
-  musicTimeout = setTimeout(scheduleNextNoteElectronic, 600 + Math.random() * 2500);
-}
-
-function startJazzMusic() {
-  initAudio().then(() => {
-    stopMusic();
-    stopAmbientIfPlaying();
-    // Warm upright bass feel
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'triangle';
-    osc1.frequency.value = 55;
-    const g1 = audioCtx.createGain();
-    g1.gain.value = 0.025;
-    const lp1 = audioCtx.createBiquadFilter();
-    lp1.type = 'lowpass';
-    lp1.frequency.value = 400;
-    osc1.connect(g1);
-    g1.connect(lp1);
-    lp1.connect(audioCtx.destination);
-    osc1.start();
-    musicNodes.push(osc1);
-    // Soft brush snare texture via filtered noise
-    const { gainNode: gn } = createNoiseNode(1, 0.015);
-    const hp = audioCtx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 3000;
-    gn.disconnect();
-    gn.connect(hp);
-    hp.connect(audioCtx.destination);
-    scheduleNextNoteJazz();
-  });
-}
-
-function scheduleNextNoteJazz() {
-  if (!musicNodes.length) return;
-  const now = audioCtx.currentTime;
-  const chordTones = [130.81, 164.81, 196.00, 220.00, 261.63, 329.63, 349.23, 392.00, 440.00, 523.25];
-  const freq = chordTones[Math.floor(Math.random() * chordTones.length)];
-  const dur = 0.8 + Math.random() * 2;
-  const gain = 0.02 + Math.random() * 0.03;
-  playNote(freq, now + 0.1, dur, gain, 'triangle');
-  musicTimeout = setTimeout(scheduleNextNoteJazz, 500 + Math.random() * 1800);
-}
-
-function startAncientMusic() {
-  initAudio().then(() => {
-    stopMusic();
-    stopAmbientIfPlaying();
-    // Pentatonic drone - guqin-like
-    const osc1 = audioCtx.createOscillator();
-    osc1.type = 'sine';
-    osc1.frequency.value = 73.42; // D2
-    const g1 = audioCtx.createGain();
-    g1.gain.value = 0.03;
-    osc1.connect(g1);
-    g1.connect(audioCtx.destination);
-    osc1.start();
-    musicNodes.push(osc1);
-    // Slow vibrato on high D
-    const osc2 = audioCtx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.value = 587.33;
-    const g2 = audioCtx.createGain();
-    g2.gain.value = 0.01;
-    const lfo = audioCtx.createOscillator();
-    lfo.frequency.value = 0.08;
-    const lfoG = audioCtx.createGain();
-    lfoG.gain.value = 0.005;
-    lfo.connect(lfoG);
-    lfoG.connect(g2.gain);
-    lfo.start();
-    osc2.connect(g2);
-    g2.connect(audioCtx.destination);
-    osc2.start();
-    musicNodes.push(osc2, lfo);
-    scheduleNextNoteAncient();
-  });
-}
-
-function scheduleNextNoteAncient() {
-  if (!musicNodes.length) return;
-  const now = audioCtx.currentTime;
-  const pentatonicD = [73.42, 82.41, 110.00, 123.47, 146.83, 164.81, 220.00, 246.94, 293.66, 329.63, 440.00, 493.88, 587.33, 659.25, 880.00];
-  const freq = pentatonicD[Math.floor(Math.random() * pentatonicD.length)];
-  const dur = 2 + Math.random() * 3.5;
-  const gain = 0.015 + Math.random() * 0.025;
-  playNote(freq, now + 0.2, dur, gain, 'sine');
-  musicTimeout = setTimeout(scheduleNextNoteAncient, 1200 + Math.random() * 3000);
-}
+function startCinematicMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();playPad([55,65.41,82.41],0.025,'sine');});}
+function startElectronicMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();playPad([65.41,98,130.81],0.018,'triangle');});}
+function startJazzMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();playPad([130.81,164.81,196],0.012,'sine');playPad([261.63,329.63],0.008,'triangle');});}
+function startAncientMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();playPad([293.66,440,587.33],0.008,'sine');});}
+function startLofiMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();playPad([98,146.83,196],0.015,'triangle');});}
+function startAmbientMusic(){initAudio().then(()=>{stopMusic();stopAmbientIfPlaying();[130.81,196,261.63].forEach(f=>{const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=f;const g=audioCtx.createGain();g.gain.value=0.012;const l=audioCtx.createOscillator();l.frequency.value=0.06+Math.random()*0.04;const lg=audioCtx.createGain();lg.gain.value=0.005;l.connect(lg);lg.connect(g.gain);l.start();o.connect(g);g.connect(audioCtx.destination);o.start();musicNodes.push(o,l);});});}
 
 function cycleMusic() {
-  const styles = ['none', 'cinematic', 'electronic', 'jazz', 'ancient'];
-  const current = styles.indexOf(state.effects.musicStyle);
-  const next = styles[(current + 1) % styles.length];
-  state.effects.musicStyle = next;
-  const icons = { none: '🎼', cinematic: '🎻', electronic: '🎹', jazz: '🎷', ancient: '🪈' };
-  const labels = { none: '氛围音乐·关', cinematic: '电影管弦', electronic: '电子氛围', jazz: '爵士钢琴', ancient: '古风琴箫' };
-  $('#musicToggle').textContent = icons[next];
-  $('#musicToggle').title = `氛围音乐: ${labels[next]}`;
-
-  stopMusic();
-  if (next === 'none') {
-    toast('氛围音乐已关闭');
-    return;
-  }
-  const musicStarters = { cinematic: startCinematicMusic, electronic: startElectronicMusic, jazz: startJazzMusic, ancient: startAncientMusic };
-  musicStarters[next]?.();
-  toast(`🎵 ${labels[next]}`);
+  const styles = ['none','cinematic','ambient','lofi','electronic','jazz','ancient'];
+  const idx = styles.indexOf(state.effects.musicStyle);
+  state.effects.musicStyle = styles[(idx+1)%styles.length];
+  const icons = {none:'🎼',cinematic:'🎬',ambient:'🌌',lofi:'🎧',electronic:'🎹',jazz:'🎷',ancient:'🏮'};
+  const labels = {none:'无音乐',cinematic:'电影管弦',ambient:'环境氛围',lofi:'Lo-fi',electronic:'电子氛围',jazz:'爵士',ancient:'古风'};
+  $('#musicToggle').textContent = icons[state.effects.musicStyle];
+  if (state.effects.musicStyle==='none'){stopMusic();toast('氛围音乐已关闭');return;}
+  const m = {cinematic:startCinematicMusic,ambient:startAmbientMusic,lofi:startLofiMusic,electronic:startElectronicMusic,jazz:startJazzMusic,ancient:startAncientMusic};
+  m[state.effects.musicStyle]?.();
+  toast('🎵 '+labels[state.effects.musicStyle]);
 }
 
-// ===== RESET =====
-function resetProject() {
-  showConfirm('重新开始', '将清除所有创作内容。确认重新开始吗？', () => {
-    for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; state.stages[i].history = []; }
-    state.stages[1].status = 'active';
-    state.stage = 1;
-    state.config.idea = '';
-    state.config.scriptContent = '';
-    state.config.reference = '';
-    state.config.mode = 'idea';
-    state.config.style = '电影感写实';
-    state.config.audience = 'Z世代(18-25)';
-    state._assets = [];
-    $('#ideaInput').value = '';
-    $('#referenceInput').value = '';
-    $('#styleSelect').value = '电影感写实';
-    $('#audienceSelect').value = 'Z世代(18-25)';
-    $('#styleCustomInput').classList.add('hidden'); $('#styleCustomInput').value = '';
-    $('#audienceCustomInput').classList.add('hidden'); $('#audienceCustomInput').value = '';
-    updateAssets();
-    renderProgress();
-    renderStageCard();
-    renderAssetPanel();
-    autosaveProject();
-    toast('已重置，开始全新创作');
-  });
-}
-
-// ===== FAQ =====
-$$('.faq-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const answer = btn.nextElementSibling;
-    const icon = btn.querySelector('.fa-chevron-down');
-    answer.classList.toggle('hidden');
-    icon.style.transform = answer.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-  });
-});
-
-// ===== EVENT BINDINGS =====
-$('#fxToggle').addEventListener('click', cycleFX);
-$('#soundToggle').addEventListener('click', cycleSound);
-$('#musicToggle').addEventListener('click', cycleMusic);
-$('#hamburgerBtn').addEventListener('click', () => {
-  $('#mobileNavDrawer').classList.add('open');
-  $('#mobileNavOverlay').classList.add('open');
-});
-function closeMobileNav() {
-  $('#mobileNavDrawer').classList.remove('open');
-  $('#mobileNavOverlay').classList.remove('open');
-}
-$('#resetProjectBtn').addEventListener('click', resetProject);
-$('#exportBtn').addEventListener('click', showExport);
-$('#scriptPasteArea').addEventListener('input', function() {
-  state.config.scriptContent = this.value;
-  updateScriptStatus();
-});
-
-// ESC key to close modals
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (!$('#confirmOverlay').classList.contains('hidden')) {
-      $('#confirmOverlay').classList.add('hidden');
-      confirmCallback = null;
-    }
-    if (!$('#exportOverlay').classList.contains('hidden')) {
-      $('#exportOverlay').classList.add('hidden');
-    }
-  }
-});
-
-// Close overlays on backdrop click
-$('#confirmOverlay').addEventListener('click', (e) => { if (e.target === $('#confirmOverlay')) { $('#confirmOverlay').classList.add('hidden'); confirmCallback = null; } });
-$('#exportOverlay').addEventListener('click', (e) => { if (e.target === $('#exportOverlay')) { $('#exportOverlay').classList.add('hidden'); } });
-
-// Sync config inputs
-['#ideaInput','#platformSelect','#styleSelect','#audienceSelect','#aspectSelect'].forEach(sel => {
-  const el = $(sel);
-  if (el) {
-    el.addEventListener('change', () => {
-      const map = { ideaInput: 'idea', platformSelect: 'platform', styleSelect: 'style', audienceSelect: 'audience', aspectSelect: 'aspectRatio' };
-      const key = map[sel.slice(1)];
-      state.config[key] = el.value;
-    });
-  }
-});
-
-// ===== PRICING MODEL SELECTOR =====
-state._pricingModel = 'craft';
-function updatePricingUI() {
-  const isElite = state._pricingModel === 'elite';
-  $('#tabCraft').className = 'px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ' + (!isElite ? 'bg-gold/15 text-gold border border-gold/30' : 'text-mist');
-  $('#tabElite').className = 'px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ' + (isElite ? 'bg-gold/15 text-gold border border-gold/30' : 'text-mist');
-  $('#pricingModelDesc').textContent = isElite
-    ? '母带版：深度创作引擎，生成质量更高、细节更丰富——每字消耗相当于样片版×3'
-    : '样片版：稳定精准，适合日常创作和批量产出';
-  // Update word counts with 3x multiplier for elite
-  const m = isElite ? 3 : 1;
-  $('#freeWords').textContent = (10000 * m).toLocaleString();
-  $('#proWords').textContent = (100000 * m).toLocaleString();
-  $('#teamWords').textContent = (333333 * m).toLocaleString();
-}
 // ===== INIT =====
 state.stages[1].status = 'active';
 renderProgress();
@@ -2822,6 +2393,25 @@ renderAssetPanel();
 renderWorkflowCards();
 
 // ===== RENDER: WORKFLOW CARDS =====
+function runQuickDemo() {
+  const ideas = ['一个雨夜便利店的故事','古风反转悬疑','冬日情侣寻宝','赛博朋克外卖员','森林里的小精灵'];
+  const idea = ideas[Math.floor(Math.random()*ideas.length)];
+  const steps = [
+    {role:'编剧',out:'拆解为4段叙事：开场悬念→冲突升级→高潮爆发→余韵收尾'},
+    {role:'导演',out:'导演阐述+3个场景清单+节拍分析（含镜头调度建议）'},
+    {role:'服化道',out:'角色外观设计+场景灯光方案+Midjourney可直出的英文提示词'},
+    {role:'音乐总监',out:'曲风定调+BPM+Suno提示词+情绪曲线'},
+    {role:'分镜师',out:'4段视频提示词——每条含镜头语言/光线/构图，可直喂可灵/Seedance'}
+  ];
+  const out = $('#quickDemoOut');
+  out.innerHTML = '<span class="bg-gold/10 text-gold rounded-full px-3 py-1">💡 '+idea+'</span> → ';
+  steps.forEach((s,i)=>{
+    out.innerHTML += '<span class="bg-panelSoft border border-white/6 rounded-full px-2.5 py-1 text-white/60">'+s.role+'：'+s.out.slice(0,15)+'…</span>';
+    if(i<4) out.innerHTML += '<span class="text-gold/30">→</span>';
+  });
+  out.innerHTML += '<br><span class="text-gold/50 text-[10px] mt-2 block">↑ 5步共生成12-20条可直接复制使用的精准提示词</span>';
+}
+
 function renderWorkflowCards() {
   const grid = $('#workflowGrid');
   if (!grid) return;
