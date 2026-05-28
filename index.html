@@ -167,23 +167,18 @@
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
     /* ===== VIEWFINDER ONBOARDING ===== */
-    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(5,8,16,.92); display: none; cursor: default; overflow: hidden; }
-    #vfOverlay.active { display: block; }
+    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: transparent; display: none; cursor: default; overflow: hidden; pointer-events: none; }
+    #vfOverlay.active { display: block; pointer-events: auto; }
     /* Film grain texture */
-    #vfOverlay::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:.04; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E"); background-size:180px 180px; }
-    /* Viewfinder cutout - L-bracket corners */
-    #vfCutout { position: absolute; border-radius: 6px; box-shadow: 0 0 80px rgba(184,148,95,.08); transition: all .5s cubic-bezier(.22,1,.36,1); pointer-events: none; filter: blur(0px); }
-    #vfCutout.refocus { filter: blur(4px); }
-    #vfCutout::before { content:''; position:absolute; inset:-6px; border-radius:10px;
-      background: linear-gradient(135deg, rgba(184,148,95,.6) 0px, transparent 2px, transparent calc(100% - 2px), rgba(184,148,95,.6) calc(100% - 1px)),
-                  linear-gradient(225deg, rgba(184,148,95,.6) 0px, transparent 2px, transparent calc(100% - 2px), rgba(184,148,95,.6) calc(100% - 1px));
-      -webkit-mask: linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0);
-      opacity: .7; }
-    /* Corner L-brackets via pseudo */
-    #vfCutout::after { content:''; position:absolute; inset:-2px; border-radius:8px; border:1px solid transparent;
-      background: linear-gradient(0deg, rgba(184,148,95,.5) 0%, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px), rgba(184,148,95,.5) 100%) no-repeat,
-                  linear-gradient(90deg, rgba(184,148,95,.5) 0%, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px), rgba(184,148,95,.5) 100%) no-repeat;
-      background-size: 100% 2px, 2px 100%; background-position: center top, left center; opacity:.5; }
+    #vfOverlay::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:.03; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E"); background-size:180px 180px; }
+    /* Viewfinder cutout - the DARK part is the box-shadow, cutout is transparent */
+    #vfCutout { position: absolute; border-radius: 6px; box-shadow: 0 0 0 9999px rgba(5,8,16,.85); transition: all .5s cubic-bezier(.22,1,.36,1); pointer-events: none; background: transparent; }
+    #vfCutout::before { content:''; position:absolute; inset:-4px; border-radius:10px; border:2px solid rgba(184,148,95,.4); opacity:.6; }
+    /* Corner L-brackets */
+    #vfCutout::after { content:''; position:absolute; inset:-6px; border-radius:12px; border:2px solid transparent;
+      border-image: linear-gradient(90deg, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px)) 1,
+                   linear-gradient(0deg, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px)) 1;
+      opacity:.5; }
     /* Crosshair center marks */
     #vfCrossC { position:absolute; left:50%; top:50%; width:24px; height:24px; transform:translate(-50%,-50%); pointer-events:none; opacity:.3; }
     #vfCrossC::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(184,148,95,.6); }
@@ -2465,20 +2460,21 @@ const VF_STEPS = [
 let vfIdx = 0, vfTimer = null;
 
 function positionViewfinder(targetEl) {
-  const r = targetEl.getBoundingClientRect();
-  const pad = 12;
-  const cut = $('#vfCutout');
-  cut.style.left = (r.left - pad) + 'px';
-  cut.style.top = (r.top - pad) + 'px';
-  cut.style.width = (r.width + pad * 2) + 'px';
-  cut.style.height = (r.height + pad * 2) + 'px';
-
-  // Tip below cutout
-  const tip = $('#vfTip');
-  const tipTop = r.bottom + pad + 20;
-  tip.style.left = Math.max(20, r.left + r.width / 2 - 160) + 'px';
-  tip.style.top = Math.min(tipTop, window.innerHeight - 120) + 'px';
-  tip.style.width = '320px';
+  targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    const r = targetEl.getBoundingClientRect();
+    const pad = 12;
+    const cut = $('#vfCutout');
+    cut.style.left = (r.left - pad) + 'px';
+    cut.style.top = (r.top - pad) + 'px';
+    cut.style.width = (r.width + pad * 2) + 'px';
+    cut.style.height = (r.height + pad * 2) + 'px';
+    const tip = $('#vfTip');
+    const tipTop = r.bottom + pad + 20;
+    tip.style.left = Math.max(20, r.left + r.width / 2 - 160) + 'px';
+    tip.style.top = Math.min(tipTop, window.innerHeight - 120) + 'px';
+    tip.style.width = '320px';
+  }, 450);
 }
 
 function showVFStep(idx) {
