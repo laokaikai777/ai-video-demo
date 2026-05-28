@@ -167,14 +167,14 @@
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
     /* ===== VIEWFINDER ONBOARDING ===== */
-    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(3,5,8,.88); display: none; cursor: default; }
+    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(3,5,8,.78); display: none; cursor: default; overflow: hidden; }
     #vfOverlay.active { display: block; }
-    #vfOverlay .vf-film { position: absolute; inset: 0; pointer-events: none; opacity: .03; background: repeating-linear-gradient(0deg, rgba(255,255,255,.3) 0px, transparent 1px, transparent 3px); background-size: 100% 4px; }
-    #vfCutout { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(3,5,8,.88); transition: all .55s cubic-bezier(.22,1,.36,1); pointer-events: none; }
+    #vfOverlay .vf-film { position: absolute; inset: 0; pointer-events: none; opacity: .04; background: repeating-linear-gradient(0deg, rgba(255,255,255,.3) 0px, transparent 1px, transparent 3px); background-size: 100% 4px; }
+    #vfCutout { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(3,5,8,.78), 0 0 40px rgba(184,148,95,.15) inset; transition: all .55s cubic-bezier(.22,1,.36,1); pointer-events: none; background: rgba(184,148,95,.04); }
     /* Viewfinder corners */
-    #vfCutout::before { content:''; position:absolute; inset:-3px; border-radius:20px; border:2px solid rgba(184,148,95,.35); mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); -webkit-mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); }
+    #vfCutout::before { content:''; position:absolute; inset:-3px; border-radius:20px; border:2px solid rgba(184,148,95,.5); mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); -webkit-mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); }
     /* Crosshair */
-    #vfCrossH, #vfCrossV { position: absolute; background: rgba(184,148,95,.12); pointer-events: none; }
+    #vfCrossH, #vfCrossV { position: absolute; background: rgba(184,148,95,.2); pointer-events: none; }
     #vfCrossH { left: 10%; right: 10%; height: 1px; top: 50%; }
     #vfCrossV { top: 10%; bottom: 10%; width: 1px; left: 50%; }
     /* Recording dot */
@@ -977,9 +977,8 @@ function copyAllPrompts() {
   const assets = state._assets || [];
   let all = '';
   assets.forEach(a => {
-    all += `## ${a.type}\n`;
-    a.items.forEach(item => { all += `- ${item}\n`; });
-    all += '\n';
+    all += `## ${a.type}\n\n`;
+    (a.full||a.items).forEach(item => { all += `${item}\n\n`; });
   });
   if (!all.trim()) { toast('暂无提示词可复制', 'info'); return; }
   copyPrompt(all.trim(), '全部资产');
@@ -1923,19 +1922,19 @@ function handleBack(n) {
 // ===== ASSET PANEL =====
 function updateAssets() {
   state._assets = [];
-  const d1 = state.stages[1].data;
-  const d2 = state.stages[2].data;
-  const d3 = state.stages[3].data;
-  const d4 = state.stages[4].data;
-  const d5 = state.stages[5].data;
+  const d1 = state.stages[1].data, d2 = state.stages[2].data, d3 = state.stages[3].data, d4 = state.stages[4].data, d5 = state.stages[5].data;
 
-  if (d1?.segments) state._assets.push({ type: '段落', icon: 'fa-list-alt', items: d1.segments.map(s => s.title) });
-  if (d2?.characterList) state._assets.push({ type: '人物清单', icon: 'fa-users', items: d2.characterList.map(c => c.name) });
-  if (d2?.sceneList) state._assets.push({ type: '场景清单', icon: 'fa-map-marker', items: d2.sceneList.map(s => s.name) });
-  if (d3?.characters) state._assets.push({ type: '角色设计', icon: 'fa-paint-brush', items: d3.characters.map(c => c.name) });
-  if (d3?.scenes) state._assets.push({ type: '场景设计', icon: 'fa-picture-o', items: d3.scenes.map(s => s.name) });
-  if (d4?.musicDirection?.genre) state._assets.push({ type: '音乐方案', icon: 'fa-music', items: [d4.musicDirection.genre] });
-  if (d5?.videoPrompts) state._assets.push({ type: '视频提示词', icon: 'fa-film', items: d5.videoPrompts.map(v => v.segmentId) });
+  if (d1?.segments) state._assets.push({ type: '编剧·叙事段落', icon: 'fa-list-alt', items: d1.segments.map(s => s.title), full: d1.segments.map(s => `【${s.id}】${s.title}\n时长：${s.duration||''}\n目标：${s.goal||''}\n角色：${s.characters||''}\n场景：${s.scene||''}`) });
+  if (d1?.projectTitle) state._assets.push({ type: '编剧·项目设定', icon: 'fa-star', items: [d1.projectTitle], full: [`项目：${d1.projectTitle}\n简介：${d1.projectBrief||''}`] });
+  if (d2?.directorNotes) state._assets.push({ type: '导演·阐述', icon: 'fa-video-camera', items: ['导演阐述'], full: [d2.directorNotes] });
+  if (d2?.characterList) state._assets.push({ type: '导演·人物清单', icon: 'fa-users', items: d2.characterList.map(c => c.name), full: d2.characterList.map(c => `${c.name}（${c.role}）`) });
+  if (d2?.sceneList) state._assets.push({ type: '导演·场景清单', icon: 'fa-map-marker', items: d2.sceneList.map(s => s.name), full: d2.sceneList.map(s => `${s.name}（${s.type}）`) });
+  if (d3?.characters) state._assets.push({ type: '服化道·角色设计', icon: 'fa-paint-brush', items: d3.characters.map(c => c.name), full: d3.characters.map(c => `${c.name}（${c.role}）\n外貌：${c.ageAppearance||''}\n服装：${c.costume||''}\n设计笔记：${c.designNotes||''}`) });
+  if (d3?.scenes) state._assets.push({ type: '服化道·场景设计', icon: 'fa-picture-o', items: d3.scenes.map(s => s.name), full: d3.scenes.map(s => `${s.name}（${s.type}）\n灯光：${s.lighting||''}\n氛围：${s.mood||''}\n设计笔记：${s.designNotes||''}`) });
+  if (d4?.musicDirection?.genre) state._assets.push({ type: '音乐·配乐方案', icon: 'fa-music', items: [d4.musicDirection.genre], full: [`曲风：${d4.musicDirection.genre}\nBPM：${d4.musicDirection.tempo||''}\n乐器：${d4.musicDirection.instruments||''}\n参考：${d4.musicDirection.referenceStyle||''}\nSuno提示词：${d4.musicDirection.sunoPrompt||''}`] });
+  if (d5?.videoPrompts) state._assets.push({ type: '分镜·视频提示词', icon: 'fa-film', items: d5.videoPrompts.map(v => v.segmentId), full: d5.videoPrompts.map(v => `【${v.segmentId}】\n${v.prompt||''}`) });
+  if (d5?.checklist) state._assets.push({ type: '分镜·交付清单', icon: 'fa-check-square-o', items: d5.checklist, full: d5.checklist });
+  if (d5?.advice) state._assets.push({ type: '分镜·制片建议', icon: 'fa-lightbulb-o', items: ['制片建议'], full: [d5.advice] });
 }
 
 function renderAssetPanel() {
@@ -2002,7 +2001,7 @@ function showExport() {
 
     assets.forEach(a => {
       md += `## ${a.type}\n\n`;
-      a.items.forEach(item => { md += `- ${item}\n`; });
+      (a.full||a.items).forEach(item => { md += `${item}\n\n`; });
       md += '\n';
     });
 
@@ -2025,7 +2024,7 @@ function downloadExport() {
   const assets = state._assets || [];
   if (!assets.length) { toast('暂无资产可下载', 'info'); return; }
   let md = `# AI视频导演台 · 项目导出\n\n> ${new Date().toLocaleDateString('zh-CN')} | ${state.config.platform} | ${state.config.style}\n\n---\n\n`;
-  assets.forEach(a => { md += `## ${a.type}\n\n`; a.items.forEach(item => md += `- ${item}\n`); md += '\n'; });
+  assets.forEach(a => { md += `## ${a.type}\n\n`; (a.full||a.items).forEach(item => md += `${item}\n\n`); });
   if (state.stages[5].data?.checklist) { md += `## 📋 交付清单\n\n`; state.stages[5].data.checklist.forEach(item => md += `- [x] ${item}\n`); }
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a');
@@ -2885,6 +2884,7 @@ function vfStep(dir) {
 function skipViewFinder(save = false) {
   $('#vfOverlay').classList.remove('active');
   $('#vfCountdown').innerHTML = '';
+  document.body.style.overflow = '';
   if (save) { try { localStorage.setItem('vfOnboarded', '1'); } catch(e) {} }
 }
 
@@ -2904,6 +2904,7 @@ function startVFCountdown(cb) {
 document.addEventListener('DOMContentLoaded', function initViewfinder() {
   try { if (localStorage.getItem('vfOnboarded') === '1') return; } catch(e) {}
   $('#vfOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
   startVFCountdown(() => {
     showVFStep(0);
     window.addEventListener('resize', () => { if ($('#vfOverlay').classList.contains('active')) positionViewfinder(document.querySelector(VF_STEPS[vfIdx].target)); });
