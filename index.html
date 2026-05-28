@@ -127,6 +127,9 @@
     /* Gentle drift for decorative elements */
     .gentle-drift { animation: gentleDrift 12s ease-in-out infinite; }
     h2, h3, .font-display { font-family: 'Noto Serif SC', Georgia, serif; }
+    /* Prompt quote blocks - used in case studies */
+    .prompt-quote { border-left: 2px solid rgba(184,148,95,.3); padding-left: 14px; }
+    .prompt-quote::before { content: '\201C'; font-family: 'Noto Serif SC', Georgia, serif; font-size: 28px; color: rgba(184,148,95,.25); line-height: 0; vertical-align: -8px; margin-right: 2px; }
     @media (max-width: 1024px) {
       .asset-panel-mobile { max-height: 320px; }
 
@@ -574,7 +577,7 @@
         <!-- Case 1: 古风反转 - 中国古代 -->
         <div class="group rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame overflow-hidden interactive card-glow-hover">
           <div class="aspect-[9/16] overflow-hidden relative">
-            <img src="storyboard-triptych.png" alt="中国古代古风反转短片" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
+            <img src="case-gufeng.png" alt="中国古代古风反转短片" class="w-full h-full object-cover img-reveal group-hover:scale-105 transition-transform duration-700" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent"></div>
             <div class="absolute bottom-0 left-0 right-0 p-4">
               <p class="text-sm font-semibold text-white">古风反转短片 <span class="text-[10px] text-gold/60 ml-1">中国古代</span></p>
