@@ -1048,8 +1048,9 @@ function buildUserPrompt(action, cfg, extra) {
 
 async function apiCall(action, extra = {}) {
   const cfg = state.config;
+  const model = state._pricingModel === 'elite' ? 'claude-opus-4-7' : 'claude-sonnet-4-6';
   const body = {
-    model: 'claude-sonnet-4-6',
+    model: model,
     temperature: 0.7,
     max_tokens: action === 'write' ? 2048 : action === 'storyboard' ? 2048 : 1536,
     messages: [
