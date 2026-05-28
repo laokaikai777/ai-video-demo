@@ -1242,6 +1242,8 @@ function updateStartButton() {
 }
 
 function startWizard() {
+  // Auto-dismiss onboarding if active
+  if ($('#vfOverlay').classList.contains('active')) skipViewFinder(true);
   const sc = state.config.scriptContent || '';
   if (state.config.mode === 'script' && !sc.trim()) {
     toast('请先上传或粘贴剧本内容');
@@ -2905,6 +2907,13 @@ document.addEventListener('DOMContentLoaded', function initViewfinder() {
   try { if (localStorage.getItem('vfOnboarded') === '1') return; } catch(e) {}
   $('#vfOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
+  // Dismiss onboarding if user clicks on actionable elements
+  document.addEventListener('click', function vfDismiss(e) {
+    if (!$('#vfOverlay').classList.contains('active')) { document.removeEventListener('click', vfDismiss); return; }
+    const t = e.target;
+    if (t.closest('#vfSkip,#vfControls,#vfCutout')) return; // allow onboarding controls
+    if (t.closest('input,textarea,select,button,a')) { skipViewFinder(true); document.removeEventListener('click', vfDismiss); }
+  });
   startVFCountdown(() => {
     showVFStep(0);
     window.addEventListener('resize', () => { if ($('#vfOverlay').classList.contains('active')) positionViewfinder(document.querySelector(VF_STEPS[vfIdx].target)); });
