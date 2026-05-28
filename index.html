@@ -301,7 +301,7 @@
             <i class="fa fa-file-text-o mr-1.5"></i>已有剧本
           </button>
         </div>
-        <div class="p-3 md:p-4 grid gap-4 md:grid-cols-3">
+        <div class="p-3 md:p-4 space-y-3">
           <!-- Idea input (Path A) -->
           <div id="ideaArea">
             <div class="flex-1">
@@ -2373,19 +2373,11 @@ function cycleMusic() {
 // ===== INIT =====
 state.stages[1].status = 'active';
 renderProgress();
-renderStageCard();
-renderAssetPanel();
-renderWorkflowCards();
-renderHeroCards();
-
-
-// ===== INIT =====
-state.stages[1].status = 'active';
-renderProgress();
 renderBreadcrumb();
 renderStageCard();
 renderAssetPanel();
 renderWorkflowCards();
+renderHeroCards();
 
 // Event bindings
 $('#fxToggle').addEventListener('click', cycleFX);
