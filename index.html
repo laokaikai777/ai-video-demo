@@ -1073,6 +1073,11 @@ function setStage(n) {
 }
 
 function completeStage(n, data) {
+  // Save current data to history before overwriting
+  if (!state.stages[n].history) state.stages[n].history = [];
+  if (state.stages[n].data) {
+    state.stages[n].history.push({ data: state.stages[n].data, ts: Date.now() });
+  }
   state.stages[n].data = data;
   state.stages[n].status = 'done';
   if (n < 5) {
@@ -1091,10 +1096,10 @@ function completeStage(n, data) {
 }
 
 function resetFromStage(n) {
-  // Clear data from stage n onwards
   for (let i = n; i <= 5; i++) {
     state.stages[i].data = null;
     state.stages[i].status = 'pending';
+    state.stages[i].history = [];
   }
   state.stages[n].status = 'active';
   state.stage = n;
@@ -1221,7 +1226,7 @@ function startWizard() {
   state.config.audience = getSelectValue('#audienceSelect', '#audienceCustomInput');
   state.config.aspectRatio = $('#aspectSelect').value;
   state.config.reference = $('#referenceInput').value.trim();
-  for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; }
+  for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; state.stages[i].history = []; }
   state.stages[1].status = 'active';
   state.stage = 1;
   updateAssets();
@@ -1436,6 +1441,13 @@ function buildFooterButtons(stageId, st) {
     </button>`;
     btns += `<button onclick="toggleManualEdit(${stageId})" class="text-xs text-mist/50 interactive hover:text-gold/70 ml-auto">
       <i class="fa fa-edit mr-1"></i>手动调整
+    </button>`;
+  }
+
+  // Version history (when data exists and history has entries)
+  if (hasData && state.stages[stageId].history && state.stages[stageId].history.length) {
+    btns += `<button onclick="restoreHistory(${stageId})" class="text-xs text-mist/50 interactive hover:text-gold/70" title="回溯到之前的版本">
+      <i class="fa fa-history mr-1"></i>${state.stages[stageId].history.length}个历史版本
     </button>`;
   }
 
@@ -1826,6 +1838,10 @@ function saveManualEdit(stageId) {
   const raw = $('#stageEditInput' + stageId).value.trim();
   try {
     const data = JSON.parse(raw);
+    if (!state.stages[stageId].history) state.stages[stageId].history = [];
+    if (state.stages[stageId].data) {
+      state.stages[stageId].history.push({ data: state.stages[stageId].data, ts: Date.now() });
+    }
     state.stages[stageId].data = data;
     state.stages[stageId].status = 'done';
     $('#editRow' + stageId).classList.add('hidden');
@@ -1841,6 +1857,19 @@ function saveManualEdit(stageId) {
 
 function cancelManualEdit(stageId) {
   $('#editRow' + stageId).classList.add('hidden');
+}
+
+function restoreHistory(stageId) {
+  const h = state.stages[stageId].history || [];
+  if (!h.length) { toast('没有历史版本', 'info'); return; }
+  const last = h.pop();
+  state.stages[stageId].data = last.data;
+  state.stages[stageId].status = 'done';
+  updateAssets();
+  renderStageCard();
+  renderAssetPanel();
+  autosaveProject();
+  toast(`已回溯到历史版本（${new Date(last.ts).toLocaleTimeString('zh-CN')}）`, 'success');
 }
 
 function approveAndNext(n) {
@@ -2623,7 +2652,7 @@ function cycleMusic() {
 // ===== RESET =====
 function resetProject() {
   showConfirm('重新开始', '将清除所有创作内容。确认重新开始吗？', () => {
-    for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; }
+    for (let i = 1; i <= 5; i++) { state.stages[i].data = null; state.stages[i].status = 'pending'; state.stages[i].history = []; }
     state.stages[1].status = 'active';
     state.stage = 1;
     state.config.idea = '';
