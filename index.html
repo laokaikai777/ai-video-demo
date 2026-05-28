@@ -303,6 +303,8 @@
 
 <!-- ===== WIZARD SECTION ===== -->
     <section id="wizard" class="shell pt-4 md:pt-8 xl:pt-10">
+      <!-- Progress Breadcrumb -->
+      <div id="progressBreadcrumb" class="flex items-center gap-1 mb-3 overflow-x-auto text-[11px] text-mist/50 pb-2"></div>
       <!-- Project Config Bar -->
       <div id="configBar" class="relative mb-4 overflow-hidden rounded-2xl border border-white/6 bg-panel/72 shadow-panel panel-frame">
         <!-- Mode Tabs -->
@@ -1041,11 +1043,11 @@ function showPromptFullscreen(text, title) {
 function buildSystemPrompt(action) {
   const base = `你是AI视频导演台的一名AI角色。你正在为中国创作者生成专业影视前期制作内容。始终用中文回复。输出必须是合法的JSON。`;
   const rolePrompts = {
-    write: `${base}\n你是编剧。用户给了故事灵感，你需要：\n1. 为项目起一个吸引人的标题\n2. 写一段简短的创作简介\n3. 将故事拆解为3-4个叙事段落\n每个段落包含：id（S1/S2/S3/S4）、title、duration、goal、characters、scene\n输出JSON格式：{"projectTitle":"...","projectBrief":"...","segments":[{id,title,duration,goal,characters,scene},...]}`,
-    direct: `${base}\n你是导演。拿到编剧的叙事段落后，你需要：\n1. 写一段导演阐述（directorNotes）\n2. 列出人物清单（characterList: [{name,role}]）\n3. 列出场景清单（sceneList: [{name,type}]）\n4. 为每个段落做节拍分析（beatAnalysis: [{segmentId,beatGoal,cameraStyle,pacing}]）\n输出JSON。`,
-    design: `${base}\n你是服化道设计师。拿到导演阐述后，你需要：\n1. 设计角色外观（characters: [{name,role,ageAppearance,costume,designNotes}]）\n2. 设计场景视觉（scenes: [{name,type,lighting,mood,designNotes}]）\n每个提示词必须精准、可直接复制给Midjourney/SD使用。输出JSON。`,
-    music: `${base}\n你是音乐总监。你需要设计配乐方案（musicDirection: {genre,tempo,instruments,referenceStyle,sunoPrompt}）。Suno提示词必须是英文，描述清晰。输出JSON。`,
-    storyboard: `${base}\n你是分镜师。你需要：\n1. 为每个段落写一条视频生成提示词（videoPrompts: [{segmentId,prompt}]）每条提示词按可灵/Seedance/Runway输入标准编写，包含镜头语言、光线、构图、动作描述\n2. 写制片建议（advice）\n3. 列交付清单（checklist: string[]）\n输出JSON。`
+    write: `${base}\n你是编剧。用户给了故事灵感，你需要：\n1. 为项目起一个吸引人的标题\n2. 写一段简短的创作简介\n3. 将故事拆解为3-4个叙事段落\n每个段落包含：id（S1/S2/S3/S4）、title、duration（如"25秒"）、goal、characters、scene（详细场景+镜头描述）\n输出JSON格式：{"projectTitle":"...","projectBrief":"...","segments":[{id,title,duration,goal,characters,scene},...]}`,
+    direct: `${base}\n你是导演。拿到编剧的叙事段落后，你需要：\n1. 写一段导演阐述（directorNotes，200-400字，含整体基调定位、视觉风格、表演指导）\n2. 列出人物清单（characterList: [{name,role}]）\n3. 列出场景清单（sceneList: [{name,type}]）\n4. 为每个段落做节拍分析（beatAnalysis: [{segmentId,beatGoal,cameraStyle,pacing}]）\n输出JSON。`,
+    design: `${base}\n你是服化道设计师。拿到导演阐述后，你需要：\n1. 设计角色外观（characters: [{name,role,ageAppearance,costume,designNotes}]）\n2. 设计场景视觉（scenes: [{name,type,lighting,mood,designNotes}]）\n**重要：designNotes必须同时包含中文描述和英文Midjourney/SD提示词。** 英文提示词加前缀"Midjourney/SD提示词："。\n输出JSON。`,
+    music: `${base}\n你是音乐总监。你需要设计配乐方案（musicDirection: {genre,tempo,instruments,referenceStyle,sunoPrompt}）。\n**重要：sunoPrompt必须是英文**，描述音乐风格、情绪、配器。\n输出JSON。`,
+    storyboard: `${base}\n你是分镜师。你需要：\n1. 为每个段落写视频提示词（videoPrompts: [{segmentId,prompt}]）\n2. 写制片建议（advice）\n3. 列交付清单（checklist: string[]）\n**重要：每条prompt必须同时包含中文描述和英文Seedance/可灵/Runway提示词。** 英文提示词加前缀"EN:"。\n输出JSON。`
   };
   return rolePrompts[action] || rolePrompts.write;
 }
@@ -1111,6 +1113,7 @@ function setStage(n) {
     else state.stages[i].status = 'pending';
   }
   renderProgress();
+  renderBreadcrumb();
   renderStageCard();
 }
 
@@ -1136,6 +1139,7 @@ function completeStage(n, data) {
   }
   updateAssets();
   renderProgress();
+  renderBreadcrumb();
   renderStageCard();
   renderAssetPanel();
   autosaveProject();
@@ -1151,6 +1155,7 @@ function resetFromStage(n) {
   state.stage = n;
   updateAssets();
   renderProgress();
+  renderBreadcrumb();
   renderStageCard();
   renderAssetPanel();
   toast(`↩ 已回到步骤 ${n}（${STAGES[n-1].name}），后续资产已清除`);
@@ -1286,11 +1291,23 @@ function startWizard() {
     renderAssetPanel();
     renderStageCard();
     $('#wizard').scrollIntoView({ behavior: 'smooth' });
-    toast('编剧开始创作…', 'info'); runStage(1);
+    toast('准备就绪，点击下方按钮开始编剧创作');
   }
 }
 
 // ===== RENDER: PROGRESS BAR =====
+function renderBreadcrumb() {
+  const bc = $('#progressBreadcrumb');
+  if (!bc) return;
+  bc.innerHTML = STAGES.map((s, i) => {
+    const st = state.stages[s.id];
+    let cls = 'text-mist/40';
+    if (st.status === 'active') cls = 'text-gold';
+    if (st.status === 'done') cls = 'text-green-400/70';
+    return `<span class="${cls}">${s.emoji} ${s.name}</span>${i<4?'<span class="text-mist/20">→</span>':''}`;
+  }).join('');
+}
+
 function renderProgress() {
   const bar = $('#progressBar');
   let html = '';
