@@ -1024,7 +1024,7 @@ function showPromptFullscreen(text, title) {
 }
 
 // ===== API CALL =====
-function buildSystemPrompt(action, cfg) {
+function buildSystemPrompt(action) {
   const base = `你是AI视频导演台的一名AI角色。你正在为中国创作者生成专业影视前期制作内容。始终用中文回复。输出必须是合法的JSON。`;
   const rolePrompts = {
     write: `${base}\n你是编剧。用户给了故事灵感，你需要：\n1. 为项目起一个吸引人的标题\n2. 写一段简短的创作简介\n3. 将故事拆解为3-4个叙事段落\n每个段落包含：id（S1/S2/S3/S4）、title、duration、goal、characters、scene\n输出JSON格式：{"projectTitle":"...","projectBrief":"...","segments":[{id,title,duration,goal,characters,scene},...]}`,
@@ -1041,7 +1041,7 @@ function buildUserPrompt(action, cfg, extra) {
   if (cfg.reference) p += `对标参考：${cfg.reference}\n`;
   if (cfg.idea) p += `\n核心创意：${cfg.idea}`;
   if (extra.segments?.length) p += `\n\n编剧段落：\n${JSON.stringify(extra.segments)}`;
-  if (extra.directorOutput) p += `\n\n导演输出：\n${JSON.stringify(extra.directorOutput)}`;
+  // Note: directorOutput is injected centrally in apiCall()
   if (extra.feedback) p += `\n\n用户修改意见（请根据以下意见调整产出）：\n${extra.feedback}`;
   return p;
 }
@@ -1054,7 +1054,7 @@ async function apiCall(action, extra = {}) {
     temperature: 0.7,
     max_tokens: action === 'write' ? 2048 : action === 'storyboard' ? 2048 : 1536,
     messages: [
-      { role: 'system', content: buildSystemPrompt(action, cfg) },
+      { role: 'system', content: buildSystemPrompt(action) },
       { role: 'user', content: buildUserPrompt(action, cfg, extra) }
     ]
   };
@@ -1064,20 +1064,26 @@ async function apiCall(action, extra = {}) {
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120000);
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-    body: JSON.stringify(body),
-    signal: controller.signal
-  });
-  clearTimeout(timeout);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const json = await res.json();
-  const text = json.choices?.[0]?.message?.content || '';
-  // Extract JSON from markdown code blocks
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
-  const data = jsonMatch ? JSON.parse(jsonMatch[1]) : JSON.parse(text);
-  return data;
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const json = await res.json();
+    const text = json.choices?.[0]?.message?.content || '';
+    // Extract JSON from markdown code blocks
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/);
+    const data = jsonMatch ? JSON.parse(jsonMatch[1]) : JSON.parse(text);
+    return data;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') throw new Error('请求超时（120秒）');
+    throw err;
+  }
 }
 
 // ===== STAGE MANAGEMENT =====
@@ -1094,12 +1100,16 @@ function setStage(n) {
   renderStageCard();
 }
 
-function completeStage(n, data) {
-  // Save current data to history before overwriting
+function archiveStageData(n) {
   if (!state.stages[n].history) state.stages[n].history = [];
   if (state.stages[n].data) {
     state.stages[n].history.push({ data: state.stages[n].data, ts: Date.now() });
+    if (state.stages[n].history.length > 20) state.stages[n].history.shift(); // cap
   }
+}
+
+function completeStage(n, data) {
+  archiveStageData(n);
   state.stages[n].data = data;
   state.stages[n].status = 'done';
   if (n < 5) {
@@ -1822,11 +1832,11 @@ async function runStage(n) {
     );
     completeStage(n, result);
   } catch (err) {
-    // Fallback to mock data if API is unreachable
-    if (true) { // fallback to mock - API unreachable
+    // Only fallback to mock for genuine network errors, not parse/auth failures
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.name === 'AbortError') {
       try {
         const mockResult = generateMockData(n);
-        toast('⚠️ 后端暂不可用，已使用演示数据', 'info');
+        toast('⚠️ 网络不通，已使用演示数据', 'info');
         completeStage(n, mockResult);
         return;
       } catch(mockErr) {}
@@ -1860,10 +1870,7 @@ function saveManualEdit(stageId) {
   const raw = $('#stageEditInput' + stageId).value.trim();
   try {
     const data = JSON.parse(raw);
-    if (!state.stages[stageId].history) state.stages[stageId].history = [];
-    if (state.stages[stageId].data) {
-      state.stages[stageId].history.push({ data: state.stages[stageId].data, ts: Date.now() });
-    }
+    archiveStageData(stageId);
     state.stages[stageId].data = data;
     state.stages[stageId].status = 'done';
     $('#editRow' + stageId).classList.add('hidden');
@@ -1884,7 +1891,7 @@ function cancelManualEdit(stageId) {
 function restoreHistory(stageId) {
   const h = state.stages[stageId].history || [];
   if (!h.length) { toast('没有历史版本', 'info'); return; }
-  const last = h.pop();
+  const last = h[h.length - 1];
   state.stages[stageId].data = last.data;
   state.stages[stageId].status = 'done';
   updateAssets();
