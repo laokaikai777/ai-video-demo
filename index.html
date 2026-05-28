@@ -2387,6 +2387,23 @@ renderStageCard();
 renderAssetPanel();
 renderWorkflowCards();
 
+// ===== INIT =====
+state.stages[1].status = 'active';
+renderProgress();
+renderBreadcrumb();
+renderStageCard();
+renderAssetPanel();
+renderWorkflowCards();
+
+// Event bindings
+$('#fxToggle').addEventListener('click', cycleFX);
+$('#soundToggle').addEventListener('click', cycleSound);
+$('#musicToggle').addEventListener('click', cycleMusic);
+$('#hamburgerBtn').addEventListener('click', () => $('#mobileNavDrawer').classList.add('open'));
+$('#resetProjectBtn').addEventListener('click', resetProject);
+$('#exportBtn').addEventListener('click', showExport);
+$('#scriptPasteArea').addEventListener('input', function() { state.config.scriptContent = this.value; updateScriptStatus(); });
+
 // ===== RENDER: WORKFLOW CARDS =====
 function runQuickDemo() {
   const ideas = ['一个雨夜便利店的故事','古风反转悬疑','冬日情侣寻宝','赛博朋克外卖员','森林里的小精灵'];
