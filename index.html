@@ -167,39 +167,54 @@
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
     /* ===== VIEWFINDER ONBOARDING ===== */
-    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(3,5,8,.78); display: none; cursor: default; overflow: hidden; }
+    #vfOverlay { position: fixed; inset: 0; z-index: 100; background: rgba(5,8,16,.92); display: none; cursor: default; overflow: hidden; }
     #vfOverlay.active { display: block; }
-    #vfOverlay .vf-film { position: absolute; inset: 0; pointer-events: none; opacity: .04; background: repeating-linear-gradient(0deg, rgba(255,255,255,.3) 0px, transparent 1px, transparent 3px); background-size: 100% 4px; }
-    #vfCutout { position: absolute; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(3,5,8,.78), 0 0 40px rgba(184,148,95,.15) inset; transition: all .55s cubic-bezier(.22,1,.36,1); pointer-events: none; background: rgba(184,148,95,.04); }
-    /* Viewfinder corners */
-    #vfCutout::before { content:''; position:absolute; inset:-3px; border-radius:20px; border:2px solid rgba(184,148,95,.5); mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); -webkit-mask:linear-gradient(0deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%),linear-gradient(90deg,transparent 22%,#000 22% 28%,transparent 28% 72%,#000 72% 78%,transparent 78%); }
-    /* Crosshair */
-    #vfCrossH, #vfCrossV { position: absolute; background: rgba(184,148,95,.2); pointer-events: none; }
-    #vfCrossH { left: 10%; right: 10%; height: 1px; top: 50%; }
-    #vfCrossV { top: 10%; bottom: 10%; width: 1px; left: 50%; }
-    /* Recording dot */
-    #vfRecDot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; top: 12px; right: 16px; animation: recPulse 1s ease-in-out infinite; pointer-events: none; }
-    @keyframes recPulse { 0%,100%{opacity:1;box-shadow:0 0 4px #ef4444} 50%{opacity:.4;box-shadow:0 0 12px #ef4444} }
+    /* Film grain texture */
+    #vfOverlay::after { content:''; position:absolute; inset:0; pointer-events:none; opacity:.04; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E"); background-size:180px 180px; }
+    /* Viewfinder cutout - L-bracket corners */
+    #vfCutout { position: absolute; border-radius: 6px; box-shadow: 0 0 80px rgba(184,148,95,.08); transition: all .5s cubic-bezier(.22,1,.36,1); pointer-events: none; filter: blur(0px); }
+    #vfCutout.refocus { filter: blur(4px); }
+    #vfCutout::before { content:''; position:absolute; inset:-6px; border-radius:10px;
+      background: linear-gradient(135deg, rgba(184,148,95,.6) 0px, transparent 2px, transparent calc(100% - 2px), rgba(184,148,95,.6) calc(100% - 1px)),
+                  linear-gradient(225deg, rgba(184,148,95,.6) 0px, transparent 2px, transparent calc(100% - 2px), rgba(184,148,95,.6) calc(100% - 1px));
+      -webkit-mask: linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0);
+      opacity: .7; }
+    /* Corner L-brackets via pseudo */
+    #vfCutout::after { content:''; position:absolute; inset:-2px; border-radius:8px; border:1px solid transparent;
+      background: linear-gradient(0deg, rgba(184,148,95,.5) 0%, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px), rgba(184,148,95,.5) 100%) no-repeat,
+                  linear-gradient(90deg, rgba(184,148,95,.5) 0%, rgba(184,148,95,.5) 12px, transparent 12px, transparent calc(100% - 12px), rgba(184,148,95,.5) calc(100% - 12px), rgba(184,148,95,.5) 100%) no-repeat;
+      background-size: 100% 2px, 2px 100%; background-position: center top, left center; opacity:.5; }
+    /* Crosshair center marks */
+    #vfCrossC { position:absolute; left:50%; top:50%; width:24px; height:24px; transform:translate(-50%,-50%); pointer-events:none; opacity:.3; }
+    #vfCrossC::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(184,148,95,.6); }
+    #vfCrossC::after { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(184,148,95,.6); }
+    /* REC indicator */
+    #vfRecBadge { position:absolute; top:14px; right:20px; display:flex; align-items:center; gap:6px; pointer-events:none; opacity:.85; }
+    #vfRecDot { width:8px; height:8px; border-radius:50%; background:#ef4444; box-shadow:0 0 8px #ef4444; animation:recPulse 1s ease-in-out infinite; }
+    @keyframes recPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    #vfRecText { font-size:10px; color:rgba(239,68,68,.8); font-family:monospace; letter-spacing:.1em; }
+    /* Camera specs overlay at bottom of cutout */
+    #vfSpecs { position:absolute; bottom:10px; left:16px; font-size:9px; color:rgba(184,148,95,.35); font-family:monospace; pointer-events:none; display:flex; gap:12px; }
     /* Tip text below viewfinder */
     #vfTip { position: absolute; text-align: center; pointer-events: none; transition: all .4s ease; }
-    #vfTip .vf-step-num { font-size: 10px; text-transform: uppercase; letter-spacing: .3em; color: rgba(184,148,95,.6); margin-bottom: 4px; }
-    #vfTip .vf-title { font-family: 'Noto Serif SC', Georgia, serif; font-size: 18px; color: #fff; margin-bottom: 4px; }
-    #vfTip .vf-desc { font-size: 13px; color: rgba(255,255,255,.45); max-width: 320px; margin: 0 auto; line-height: 1.6; }
+    #vfTip .vf-step-num { font-size:10px; text-transform:uppercase; letter-spacing:.3em; color:rgba(184,148,95,.5); margin-bottom:6px; }
+    #vfTip .vf-title { font-family:'Noto Serif SC',Georgia,serif; font-size:20px; color:#fff; margin-bottom:4px; }
+    #vfTip .vf-desc { font-size:13px; color:rgba(255,255,255,.4); max-width:320px; margin:0 auto; line-height:1.7; }
     /* Viewfinder controls */
-    #vfControls { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 102; display: flex; align-items: center; gap: 16px; }
-    #vfSkip { position: fixed; top: 24px; right: 24px; z-index: 102; background: none; border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.4); padding: 6px 16px; border-radius: 999px; font-size: 12px; cursor: pointer; transition: all .2s; }
-    #vfSkip:hover { border-color: rgba(255,255,255,.3); color: #fff; }
-    .vf-btn { border-radius: 999px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .22s; border: none; }
-    .vf-btn-next { background: #b8945f; color: #070a10; }
-    .vf-btn-next:hover { background: #d7b27c; }
-    .vf-btn-prev { background: transparent; color: rgba(255,255,255,.4); border: 1px solid rgba(255,255,255,.1); }
-    .vf-btn-prev:hover { color: #fff; border-color: rgba(255,255,255,.3); }
-    .vf-dots { display: flex; gap: 5px; }
-    .vf-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.12); transition: all .3s; }
-    .vf-dot.on { background: #b8945f; width: 16px; border-radius: 3px; }
+    #vfControls { position:fixed; bottom:36px; left:50%; transform:translateX(-50%); z-index:102; display:flex; align-items:center; gap:20px; }
+    #vfSkip { position:fixed; top:24px; right:24px; z-index:102; background:none; border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.35); padding:6px 18px; border-radius:999px; font-size:12px; cursor:pointer; transition:all .2s; }
+    #vfSkip:hover { border-color:rgba(255,255,255,.25); color:#fff; }
+    .vf-btn { border-radius:999px; padding:9px 22px; font-size:13px; font-weight:600; cursor:pointer; transition:all .22s; border:none; }
+    .vf-btn-next { background:#b8945f; color:#070a10; }
+    .vf-btn-next:hover { background:#d7b27c; }
+    .vf-btn-prev { background:transparent; color:rgba(255,255,255,.35); border:1px solid rgba(255,255,255,.08); }
+    .vf-btn-prev:hover { color:#fff; border-color:rgba(255,255,255,.25); }
+    .vf-dots { display:flex; gap:6px; }
+    .vf-dot { width:4px; height:4px; border-radius:50%; background:rgba(255,255,255,.1); transition:all .3s; }
+    .vf-dot.on { background:#b8945f; width:20px; border-radius:3px; }
     /* Countdown intro */
-    #vfCountdown { position: fixed; inset: 0; z-index: 101; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-    #vfCountdown .vf-count-num { font-family: 'Noto Serif SC', Georgia, serif; font-size: 80px; color: #b8945f; opacity: 0; animation: countPulse .8s ease both; }
+    #vfCountdown { position:fixed; inset:0; z-index:101; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    #vfCountdown .vf-count-num { font-family:'Noto Serif SC',Georgia,serif; font-size:80px; color:#b8945f; opacity:0; animation:countPulse .8s ease both; }
     @keyframes countPulse { 0%{opacity:0;transform:scale(1.8)} 30%{opacity:1;transform:scale(1)} 70%{opacity:1;transform:scale(1)} 100%{opacity:0;transform:scale(.6)} }
   </style>
 </head>
@@ -1535,18 +1550,20 @@ function renderSegmentsResult(data) {
   </div>`;
   html += '<div class="space-y-3">';
   (data.segments||[]).forEach((seg, i) => {
-    html += `<div class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-4 fade-in-up" style="animation-delay:${i*0.08}s">
-      <div class="flex items-center gap-2 mb-2">
+    html += `<details class="rounded-xl border border-white/6 bg-gradient-to-r from-white/[0.02] to-transparent p-4 fade-in-up group" style="animation-delay:${i*0.08}s" ${i===0?'open':''}>
+      <summary class="flex items-center gap-2 cursor-pointer interactive hover:text-white">
         <span class="rounded-full bg-gold/15 px-2.5 py-0.5 text-[10px] font-medium text-gold tracking-wider">${seg.id}</span>
         <span class="text-sm font-medium text-white">${seg.title}</span>
-        <span class="ml-auto text-[11px] text-mist/60 bg-white/[0.03] rounded-full px-2 py-0.5">${seg.duration||''}</span>
+        <span class="ml-auto text-[11px] text-mist/50">${seg.duration||''}</span>
+        <i class="fa fa-chevron-down text-mist/30 text-[10px] ml-1 group-open:rotate-180 transition-transform"></i>
+      </summary>
+      <div class="mt-3 space-y-2 pl-7">
+        <p class="text-xs text-mist/70 leading-relaxed"><span class="text-gold/50">叙事目标：</span>${seg.goal||'—'}</p>
+        <p class="text-xs text-mist/70 leading-relaxed"><span class="text-gold/50">涉及角色：</span>${seg.characters||'—'}</p>
+        <p class="text-xs text-mist/70 leading-relaxed"><span class="text-gold/50">场景描述：</span>${seg.scene||'—'}</p>
+        <button class="mt-2 text-[10px] text-mist/30 hover:text-gold interactive" onclick="event.stopPropagation();copyPrompt('${(seg.goal||'')+' | '+(seg.scene||'')}','${seg.title}')"><i class="fa fa-copy mr-1"></i>复制此段提示词</button>
       </div>
-      <p class="text-xs text-mist/80 leading-relaxed">${seg.goal||''}</p>
-      <div class="flex gap-3 mt-2 text-[11px] text-mist/50">
-        <span><i class="fa fa-user mr-1 text-mist/40"></i>${seg.characters||'—'}</span>
-        <span><i class="fa fa-map-marker mr-1 text-mist/40"></i>${seg.scene||'—'}</span>
-      </div>
-    </div>`;
+    </details>`;
   });
   html += '</div>';
   return html;
@@ -2922,8 +2939,11 @@ document.addEventListener('DOMContentLoaded', function initViewfinder() {
 </script>
   <!-- Viewfinder Onboarding -->
   <div id="vfOverlay">
-    <div class="vf-film"></div>
-    <div id="vfCutout"><div id="vfCrossH"></div><div id="vfCrossV"></div><div id="vfRecDot"></div></div>
+    <div id="vfCutout">
+      <div id="vfCrossC"></div>
+      <div id="vfRecBadge"><div id="vfRecDot"></div><span id="vfRecText">REC</span></div>
+      <div id="vfSpecs"><span>F2.8</span><span>1/500</span><span>ISO 400</span><span>50mm</span></div>
+    </div>
     <div id="vfTip"><p class="vf-step-num" id="vfStepNum"></p><p class="vf-title" id="vfTitle"></p><p class="vf-desc" id="vfDesc"></p></div>
     <div id="vfCountdown"></div>
     <button id="vfSkip" onclick="skipViewFinder(true)">跳过引导</button>
